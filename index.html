@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BINARY OVERDRIVE: Ultimate Auth Edition</title>
-    <!-- Firebase Authentication & Realtime Database SDKs (v9 Compat) -->
+    <title>BINARY OVERDRIVE: Edisi Autentikasi</title>
+    <!-- SDK Firebase Authentication & Realtime Database (v9 Compat) -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -103,9 +103,9 @@
             justify-content: space-between;
         }
 
-        /* Mode Specific Visual Elements */
+        /* Invaders Box With Increased Distance Height */
         .invaders-box {
-            height: 130px; background: rgba(0,0,0,0.6); border: 1px solid var(--panel-border);
+            height: 240px; background: rgba(0,0,0,0.6); border: 1px solid var(--panel-border);
             border-radius: 8px; position: relative; overflow: hidden; margin-bottom: 10px;
             display: flex; justify-content: center;
         }
@@ -123,7 +123,7 @@
         .boss-fill { height: 100%; width: 100%; background: var(--neon-pink); transition: width 0.2s; }
 
         /* Bit Grid UI */
-        .bit-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin-bottom: 10px; }
+        .bit-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin-bottom: 15px; }
         .bit-col { display: flex; flex-direction: column; align-items: center; gap: 2px; }
         .bit-weight { font-size: 0.65rem; color: var(--neon-blue); }
 
@@ -186,66 +186,66 @@
     <div class="header">
         <div class="brand">BINARY OVERDRIVE</div>
         <div style="display: flex; gap: 8px; align-items: center;">
-            <div id="player-display" class="user-tag">NOT LOGGED IN</div>
-            <div id="audio-toggle" class="audio-toggle" onclick="toggleAudio()">SOUND: OFF</div>
+            <div id="player-display" class="user-tag">BELUM LOGIN</div>
+            <div id="audio-toggle" class="audio-toggle" onclick="toggleAudio()">SUARA: MATI</div>
         </div>
     </div>
 
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('auth')">ACCOUNT</button>
-        <button class="tab-btn" onclick="switchTab('modes')">MODES</button>
-        <button class="tab-btn" onclick="switchTab('play')">PLAY</button>
-        <button class="tab-btn" onclick="switchTab('leaderboard')">🏆 RANKS</button>
+        <button class="tab-btn active" onclick="switchTab('auth')">AKUN</button>
+        <button class="tab-btn" onclick="switchTab('modes')">MODE</button>
+        <button class="tab-btn" onclick="switchTab('play')">MAIN</button>
+        <button class="tab-btn" onclick="switchTab('leaderboard')">🏆 PERINGKAT</button>
     </div>
 
-    <!-- ACCOUNT / LOGIN VIEW -->
+    <!-- TAMPILAN AKUN / LOGIN -->
     <div id="view-auth" class="view active">
-        <h4 style="color: var(--neon-blue); margin-bottom: 4px;">PLAYER IDENTITY</h4>
-        <p style="font-size: 0.75rem; color: var(--text-muted);">Set your name once. All high scores across every mode will automatically link to your profile.</p>
+        <h4 style="color: var(--neon-blue); margin-bottom: 4px;">IDENTITAS PEMAIN</h4>
+        <p style="font-size: 0.75rem; color: var(--text-muted);">Atur nama Anda sekali. Semua skor tertinggi akan terhubung ke profil Anda secara otomatis.</p>
 
         <div class="auth-container">
-            <input type="text" id="auth-username" class="input-field" placeholder="Gamer Tag (e.g. CyberNinja)">
-            <input type="email" id="auth-email" class="input-field" placeholder="Email Address">
-            <input type="password" id="auth-pass" class="input-field" placeholder="Password">
+            <input type="text" id="auth-username" class="input-field" placeholder="Nama Pemain (misal: CyberNinja)">
+            <input type="email" id="auth-email" class="input-field" placeholder="Alamat Email">
+            <input type="password" id="auth-pass" class="input-field" placeholder="Kata Sandi">
 
-            <button class="btn-action" onclick="handleSignUp()">REGISTER ACCOUNT</button>
-            <button class="btn-secondary" onclick="handleLogin()">LOG IN</button>
-            <button class="btn-secondary" onclick="handleGuestLogin()" style="border-color: var(--neon-yellow); color: var(--neon-yellow);">ONE-CLICK GUEST PLAY</button>
+            <button class="btn-action" onclick="handleSignUp()">DAFTAR AKUN</button>
+            <button class="btn-secondary" onclick="handleLogin()">MASUK</button>
+            <button class="btn-secondary" onclick="handleGuestLogin()" style="border-color: var(--neon-yellow); color: var(--neon-yellow);">MAIN SEBAGAI TAMU</button>
         </div>
     </div>
 
-    <!-- MODE SELECTION VIEW -->
+    <!-- TAMPILAN PILIH MODE -->
     <div id="view-modes" class="view">
-        <h4 style="margin-bottom: 10px; color: var(--neon-blue);">SELECT SIMULATION</h4>
+        <h4 style="margin-bottom: 10px; color: var(--neon-blue);">PILIH SIMULASI</h4>
         <div class="mode-grid">
             <div class="mode-card">
-                <h4 style="color: var(--neon-pink);">👾 Binary Invaders</h4>
-                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 2px 0 6px 0;">Shoot down falling decimal ships with binary lasers!</p>
-                <button class="btn-action" onclick="launchMode('invaders')">PLAY INVADERS</button>
+                <h4 style="color: var(--neon-pink);">👾 Invader Biner</h4>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 2px 0 6px 0;">Tembak kapal desimal yang jatuh menggunakan laser biner!</p>
+                <button class="btn-action" onclick="launchMode('invaders')">MAIN INVADER</button>
             </div>
             <div class="mode-card">
-                <h4 style="color: var(--neon-yellow);">💣 Wire Defusal</h4>
-                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 2px 0 6px 0;">Solve bomb codes using non-jammed wire channels!</p>
-                <button class="btn-action" onclick="launchMode('bomb')">DEFUSE BOMB</button>
+                <h4 style="color: var(--neon-yellow);">💣 Jinakkan Bom</h4>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 2px 0 6px 0;">Pecahkan kode bom menggunakan jalur kabel yang tidak terkunci!</p>
+                <button class="btn-action" onclick="launchMode('bomb')">JINAKKAN BOM</button>
             </div>
             <div class="mode-card">
-                <h4 style="color: var(--neon-purple);">🧬 Bit-Shift Lab</h4>
-                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 2px 0 6px 0;">Transform byte values with shift & NOT operations!</p>
-                <button class="btn-action" onclick="launchMode('shift')">ENTER LAB</button>
+                <h4 style="color: var(--neon-purple);">🧬 Lab Pergeseran Bit</h4>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 2px 0 6px 0;">Ubah nilai byte menggunakan operasi pergeseran bit & NOT!</p>
+                <button class="btn-action" onclick="launchMode('shift')">MASUK LAB</button>
             </div>
             <div class="mode-card">
-                <h4 style="color: var(--neon-green);">⚡ M.I.N.D. 9000 Boss</h4>
-                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 2px 0 6px 0;">Deplete rogue AI health before network shutdown.</p>
-                <button class="btn-action" onclick="launchMode('boss')">FIGHT BOSS</button>
+                <h4 style="color: var(--neon-green);">⚡ Bos M.I.N.D. 9000</h4>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 2px 0 6px 0;">Kalahkan nyawa AI jahat sebelum jaringan ditutup.</p>
+                <button class="btn-action" onclick="launchMode('boss')">LAWAN BOS</button>
             </div>
         </div>
     </div>
 
-    <!-- PLAY ARENA VIEW -->
+    <!-- TAMPILAN ARENA BERMAIN -->
     <div id="view-play" class="view">
         <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
             <div id="mode-title" style="font-size: 0.8rem; font-weight: bold; color: var(--neon-blue);">MODE</div>
-            <div style="font-size: 0.8rem; color: var(--neon-yellow);">SCORE: <span id="score-val">0</span></div>
+            <div style="font-size: 0.8rem; color: var(--neon-yellow);">SKOR: <span id="score-val">0</span></div>
         </div>
 
         <div id="boss-container" style="display: none;">
@@ -257,7 +257,7 @@
         </div>
 
         <div style="background: rgba(0,0,0,0.4); padding: 10px; border-radius: 6px; text-align: center; margin-bottom: 10px;">
-            <div style="font-size: 0.65rem; color: var(--text-muted);">TARGET DECIMAL</div>
+            <div style="font-size: 0.65rem; color: var(--text-muted);">TARGET DESIMAL</div>
             <div id="target-val" style="font-size: 2rem; font-weight: bold; color: var(--neon-pink);">0</div>
         </div>
 
@@ -270,21 +270,17 @@
             <button class="op-btn" onclick="applyOperator('add')">+1</button>
         </div>
 
-        <div style="text-align: center; margin-bottom: 10px; font-size: 0.8rem;">
-            Current Byte: <span id="sum-val" style="color: var(--neon-green); font-weight: bold;">0</span>
-        </div>
-
-        <button class="btn-action" onclick="checkAnswer()">EXECUTE OVERRIDE</button>
+        <button class="btn-action" onclick="checkAnswer()">JALANKAN OVERRIDE</button>
     </div>
 
-    <!-- GLOBAL LEADERBOARD VIEW -->
+    <!-- TAMPILAN PERINGKAT GLOBAL -->
     <div id="view-leaderboard" class="view">
-        <h4 style="margin-bottom: 8px; color: var(--neon-yellow);">GLOBAL RANKINGS</h4>
+        <h4 style="margin-bottom: 8px; color: var(--neon-yellow);">PERINGKAT GLOBAL</h4>
         <div class="lb-mode-selector">
-            <button class="lb-mode-btn active" onclick="loadLeaderboard('invaders')">Invaders</button>
-            <button class="lb-mode-btn" onclick="loadLeaderboard('bomb')">Wire Defusal</button>
-            <button class="lb-mode-btn" onclick="loadLeaderboard('shift')">Bit-Shift</button>
-            <button class="lb-mode-btn" onclick="loadLeaderboard('boss')">Boss</button>
+            <button class="lb-mode-btn active" onclick="loadLeaderboard('invaders')">Invader</button>
+            <button class="lb-mode-btn" onclick="loadLeaderboard('bomb')">Bom</button>
+            <button class="lb-mode-btn" onclick="loadLeaderboard('shift')">Geser Bit</button>
+            <button class="lb-mode-btn" onclick="loadLeaderboard('boss')">Bos</button>
         </div>
         <div id="lb-list"></div>
     </div>
@@ -297,7 +293,7 @@ let audioEnabled = false;
 
 function toggleAudio() {
     audioEnabled = !audioEnabled;
-    document.getElementById('audio-toggle').innerText = audioEnabled ? 'SOUND: ON' : 'SOUND: OFF';
+    document.getElementById('audio-toggle').innerText = audioEnabled ? 'SUARA: NYALA' : 'SUARA: MATI';
     document.getElementById('audio-toggle').classList.toggle('on', audioEnabled);
 }
 
@@ -316,7 +312,7 @@ function playNote(freq, type='sine', duration=0.1) {
     osc.stop(audioCtx.currentTime + duration);
 }
 
-/* Firebase Configuration & Initialization */
+/* Konfigurasi & Inisialisasi Firebase */
 const firebaseConfig = {
   apiKey: "AIzaSyCq_UMFJ5J2zxbX2zbCfgovw94TGuHeyfY",
   authDomain: "binary-b7ac9.firebaseapp.com",
@@ -327,18 +323,18 @@ const firebaseConfig = {
   appId: "1:871041429248:web:9cc549937006bf3f270de5"
 };
 
-// Initialize Firebase (Compat syntax)
+// Inisialisasi Firebase (Sintaks Compat)
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
 let currentUser = null;
-let gamerTag = localStorage.getItem('binary_gamer_tag') || "GUEST";
+let gamerTag = localStorage.getItem('binary_gamer_tag') || "TAMU";
 
 auth.onAuthStateChanged((user) => {
     if (user) {
         currentUser = user;
-        gamerTag = user.displayName || localStorage.getItem('binary_gamer_tag') || "Player_" + user.uid.substring(0,4);
+        gamerTag = user.displayName || localStorage.getItem('binary_gamer_tag') || "Pemain_" + user.uid.substring(0,4);
         document.getElementById('player-display').innerText = gamerTag.toUpperCase();
         switchTab('modes');
     } else {
@@ -351,14 +347,14 @@ function handleSignUp() {
     const pass = document.getElementById('auth-pass').value;
     const name = document.getElementById('auth-username').value || "CyberHacker";
 
-    if (!email || !pass) return alert("Please fill in email and password!");
+    if (!email || !pass) return alert("Harap isi email dan kata sandi!");
 
     auth.createUserWithEmailAndPassword(email, pass)
         .then((cred) => cred.user.updateProfile({ displayName: name }))
         .then(() => {
             localStorage.setItem('binary_gamer_tag', name);
             gamerTag = name;
-            alert("Registered! Welcome " + name);
+            alert("Berhasil Mendaftar! Selamat Datang " + name);
         }).catch(err => alert(err.message));
 }
 
@@ -369,7 +365,7 @@ function handleLogin() {
 }
 
 function handleGuestLogin() {
-    const guestName = prompt("Enter a Gamer Tag:", "Guest_" + Math.floor(Math.random()*1000));
+    const guestName = prompt("Masukkan Nama Pemain:", "Tamu_" + Math.floor(Math.random()*1000));
     if (guestName) {
         gamerTag = guestName;
         localStorage.setItem('binary_gamer_tag', guestName);
@@ -378,7 +374,7 @@ function handleGuestLogin() {
     }
 }
 
-/* Game State Management */
+/* Manajemen Status Game */
 let activeMode = 'invaders';
 let score = 0;
 let targetValue = 0;
@@ -407,7 +403,8 @@ function launchMode(mode) {
     activeMode = mode;
     score = 0;
     document.getElementById('score-val').innerText = score;
-    document.getElementById('mode-title').innerText = mode.toUpperCase() + ' MODE';
+    const titles = { 'invaders': 'MODE INVADER', 'bomb': 'MODE BOM', 'shift': 'MODE LAB BIT', 'boss': 'MODE BOS' };
+    document.getElementById('mode-title').innerText = titles[mode] || mode.toUpperCase();
     switchTab('play');
 
     document.getElementById('invaders-box').style.display = (mode === 'invaders') ? 'flex' : 'none';
@@ -448,12 +445,9 @@ function renderBits() {
         col.appendChild(btn);
         grid.appendChild(col);
     });
-
-    const sum = bitStates.reduce((acc, bit, idx) => acc + bit * bitWeights[idx], 0);
-    document.getElementById('sum-val').innerText = sum;
 }
 
-/* 4 Game Modes Engine */
+/* Mesin 4 Mode Permainan */
 function startInvaders() {
     clearInterval(invaderLoop);
     bitStates = [0,0,0,0,0,0,0,0];
@@ -468,14 +462,15 @@ function startInvaders() {
 
     renderBits();
 
+    // Jarak tempuh diperpanjang ke 210px
     invaderLoop = setInterval(() => {
         enemyY += 1.5;
         enemy.style.top = enemyY + 'px';
 
-        if (enemyY > 100) {
+        if (enemyY > 210) {
             clearInterval(invaderLoop);
             playNote(100, 'sawtooth', 0.4);
-            handleGameOver("BASE BREACHED!");
+            handleGameOver("PANGKALAN JEBOL!");
         }
     }, 100);
 }
@@ -551,36 +546,34 @@ function checkAnswer() {
             bossHp -= 25;
             document.getElementById('boss-fill').style.width = bossHp + '%';
             if (bossHp <= 0) {
-                handleGameOver("M.I.N.D. 9000 DEFEATED!");
+                handleGameOver("M.I.N.D. 9000 BERHASIL DIKALAHKAN!");
             } else {
                 nextBossStage();
             }
         }
     } else {
         playNote(150, 'sawtooth', 0.2);
-        handleGameOver("OVERRIDE FAILED!");
+        handleGameOver("OVERRIDE GAGAL!");
     }
 }
 
-/* Firebase Cloud & Offline Local Leaderboard Sync */
+/* Sinkronisasi Peringkat Cloud & Lokal Offline */
 let localLeaderboards = JSON.parse(localStorage.getItem('binary_leaderboards')) || {
     invaders: [], bomb: [], shift: [], boss: []
 };
 
-function handleGameOver(msg = "GAME OVER") {
-    alert(`${msg}\nFinal Score: ${score}`);
+function handleGameOver(msg = "PERMAINAN SELESAI") {
+    alert(`${msg}\nSkor Akhir: ${score}`);
     
     if (score > 0) {
-        // Save local fallback
         if (!localLeaderboards[activeMode]) localLeaderboards[activeMode] = [];
         localLeaderboards[activeMode].push({ name: gamerTag, score: score });
         localLeaderboards[activeMode].sort((a, b) => b.score - a.score);
         localStorage.setItem('binary_leaderboards', JSON.stringify(localLeaderboards));
 
-        // Save to Firebase Cloud DB
         try {
             db.ref(`leaderboards/${activeMode}`).push({ name: gamerTag, score: score });
-        } catch(e) { console.log("DB Offline, fallback to local."); }
+        } catch(e) { console.log("DB Offline, beralih ke penyimpanan lokal."); }
     }
 
     switchTab('leaderboard');
@@ -592,21 +585,28 @@ function fetchLeaderboard(mode) {
     });
 
     const list = document.getElementById('lb-list');
-    list.innerHTML = '<div style="font-size:0.8rem; text-align:center; padding:10px;">Loading ranks...</div>';
+    
+    loadLocalLeaderboard(mode);
 
-    // Fetch live from Firebase Realtime DB
+    let loadedFromCloud = false;
+    const timeout = setTimeout(() => {
+        if (!loadedFromCloud) {
+            console.log("Koneksi cloud lambat. Menampilkan data lokal.");
+        }
+    }, 1500);
+
     try {
         db.ref(`leaderboards/${mode}`).orderByChild('score').limitToLast(10).once('value', (snapshot) => {
-            list.innerHTML = '';
+            loadedFromCloud = true;
+            clearTimeout(timeout);
+
             let scores = [];
             snapshot.forEach(child => { scores.push(child.val()); });
             scores.reverse();
 
-            if (scores.length === 0) {
-                list.innerHTML = '<div style="font-size:0.8rem; text-align:center; padding:20px;">No high scores yet!</div>';
-                return;
-            }
+            if (scores.length === 0) return;
 
+            list.innerHTML = '';
             scores.forEach((entry, idx) => {
                 const row = document.createElement('div');
                 row.className = 'lb-row';
@@ -619,7 +619,7 @@ function fetchLeaderboard(mode) {
             });
         });
     } catch(err) {
-        // Fallback to local storage if DB is unreachable
+        clearTimeout(timeout);
         loadLocalLeaderboard(mode);
     }
 }
@@ -630,7 +630,7 @@ function loadLocalLeaderboard(mode) {
     const ranks = localLeaderboards[mode] || [];
 
     if (ranks.length === 0) {
-        list.innerHTML = '<div style="font-size:0.8rem; text-align:center; padding:20px;">No high scores registered yet!</div>';
+        list.innerHTML = '<div style="font-size:0.8rem; text-align:center; padding:20px;">Belum ada skor tertinggi!</div>';
         return;
     }
 
