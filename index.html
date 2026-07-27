@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BINARY OVERDRIVE: Ultimate Auth Edition</title>
+    <!-- Firebase Authentication & Realtime Database SDKs (v9 Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        :root {
+            --bg: #030712;
+            --panel: #0b1329;
+            --panel-border: #1e293b;
+            --neon-blue: #38bdf8;
+            --neon-green: #22c55e;
+            --neon-pink: #f43f5e;
+            --neon-yellow: #eab308;
+            --neon-purple: #a855f7;
+            --text: #f8fafc;
+            --text-muted: #64748b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', monospace; user-select: none; touch-action: manipulation; }
+        
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 10px;
+            background-image: radial-gradient(circle at 50% 50%, #0f172a 0%, #030712 100%);
+        }
+
+        .game-window {
+            background: var(--panel);
+            border: 2px solid var(--neon-blue);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.15);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: rgba(0,0,0,0.4);
+            border-bottom: 1px solid var(--panel-border);
+        }
+
+        .brand { font-size: 0.95rem; font-weight: bold; color: var(--neon-blue); text-shadow: 0 0 8px var(--neon-blue); }
+        .user-tag { color: var(--neon-yellow); font-size: 0.75rem; font-weight: bold; }
+
+        .tabs {
+            display: flex;
+            background: #070d19;
+            border-bottom: 1px solid var(--panel-border);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px 4px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            color: var(--neon-blue);
+            border-bottom: 2px solid var(--neon-blue);
+            background: rgba(56, 189, 248, 0.05);
+        }
+
+        .view { padding: 15px; display: none; }
+        .view.active { display: block; }
+
+        /* Auth UI */
+        .auth-container { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+        .input-field {
+            width: 100%; padding: 10px; background: rgba(0,0,0,0.5);
+            border: 1px solid var(--panel-border); border-radius: 6px;
+            color: #fff; outline: none; font-size: 0.85rem;
+        }
+        .input-field:focus { border-color: var(--neon-blue); }
+
+        /* Mode Selection Grid */
+        .mode-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        .mode-card {
+            background: rgba(0,0,0,0.3); border: 1px solid var(--panel-border);
+            border-radius: 8px; padding: 10px; display: flex; flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Mode Specific Visual Elements */
+        .invaders-box {
+            height: 130px; background: rgba(0,0,0,0.6); border: 1px solid var(--panel-border);
+            border-radius: 8px; position: relative; overflow: hidden; margin-bottom: 10px;
+            display: flex; justify-content: center;
+        }
+
+        .enemy {
+            position: absolute; top: 0; background: var(--neon-pink); color: #000;
+            font-weight: bold; padding: 4px 10px; border-radius: 4px;
+            box-shadow: 0 0 10px var(--neon-pink);
+        }
+
+        .boss-bar {
+            width: 100%; height: 10px; background: #1e293b; border-radius: 5px;
+            overflow: hidden; margin-bottom: 10px; border: 1px solid var(--neon-pink);
+        }
+        .boss-fill { height: 100%; width: 100%; background: var(--neon-pink); transition: width 0.2s; }
+
+        /* Bit Grid UI */
+        .bit-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin-bottom: 10px; }
+        .bit-col { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .bit-weight { font-size: 0.65rem; color: var(--neon-blue); }
+
+        .bit-btn {
+            width: 100%; aspect-ratio: 1; background: #0f172a;
+            border: 1px solid var(--panel-border); border-radius: 4px;
+            color: var(--text-muted); font-size: 1.1rem; font-weight: bold; cursor: pointer;
+        }
+
+        .bit-btn.active {
+            background: var(--neon-green); border-color: var(--neon-green);
+            color: #000; box-shadow: 0 0 10px var(--neon-green);
+        }
+
+        .bit-btn.locked { background: #3f1d2e; border-color: var(--neon-pink); color: var(--neon-pink); cursor: not-allowed; }
+
+        .op-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
+        .op-btn {
+            padding: 8px 4px; background: rgba(168, 85, 247, 0.15);
+            border: 1px solid var(--neon-purple); color: var(--neon-purple);
+            font-weight: bold; font-size: 0.75rem; border-radius: 4px; cursor: pointer;
+        }
+
+        .btn-action {
+            width: 100%; padding: 12px; background: var(--neon-blue); color: #000;
+            border: none; border-radius: 6px; font-size: 0.9rem; font-weight: bold; cursor: pointer;
+        }
+        .btn-secondary {
+            background: transparent; color: var(--text-muted); border: 1px solid var(--panel-border);
+            padding: 8px; border-radius: 6px; font-size: 0.75rem; cursor: pointer;
+        }
+
+        /* Leaderboard Styles */
+        .lb-mode-selector { display: flex; gap: 4px; margin-bottom: 10px; overflow-x: auto; }
+        .lb-mode-btn {
+            padding: 4px 8px; font-size: 0.7rem; background: rgba(255,255,255,0.05);
+            border: 1px solid var(--panel-border); color: var(--text-muted); border-radius: 4px; white-space: nowrap;
+        }
+        .lb-mode-btn.active { background: var(--neon-yellow); color: #000; font-weight: bold; }
+
+        .lb-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 12px; background: rgba(0,0,0,0.3); border-radius: 4px;
+            border: 1px solid var(--panel-border); font-size: 0.85rem; margin-bottom: 4px;
+        }
+        .lb-rank { font-weight: bold; color: var(--neon-yellow); width: 30px; }
+        .lb-name { flex: 1; color: var(--text); }
+        .lb-score { color: var(--neon-green); font-weight: bold; }
+
+        .audio-toggle {
+            cursor: pointer; font-size: 0.75rem; color: var(--text-muted);
+            border: 1px solid var(--panel-border); padding: 2px 6px; border-radius: 4px;
+        }
+        .audio-toggle.on { color: var(--neon-green); border-color: var(--neon-green); }
+    </style>
+</head>
+<body>
+
+<div class="game-window">
+    <div class="header">
+        <div class="brand">BINARY OVERDRIVE</div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <div id="player-display" class="user-tag">NOT LOGGED IN</div>
+            <div id="audio-toggle" class="audio-toggle" onclick="toggleAudio()">SOUND: OFF</div>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('auth')">ACCOUNT</button>
+        <button class="tab-btn" onclick="switchTab('modes')">MODES</button>
+        <button class="tab-btn" onclick="switchTab('play')">PLAY</button>
+        <button class="tab-btn" onclick="switchTab('leaderboard')">🏆 RANKS</button>
+    </div>
+
+    <!-- ACCOUNT / LOGIN VIEW -->
+    <div id="view-auth" class="view active">
+        <h4 style="color: var(--neon-blue); margin-bottom: 4px;">PLAYER IDENTITY</h4>
+        <p style="font-size: 0.75rem; color: var(--text-muted);">Set your name once. All high scores across every mode will automatically link to your profile.</p>
+
+        <div class="auth-container">
+            <input type="text" id="auth-username" class="input-field" placeholder="Gamer Tag (e.g. CyberNinja)">
+            <input type="email" id="auth-email" class="input-field" placeholder="Email Address">
+            <input type="password" id="auth-pass" class="input-field" placeholder="Password">
+
+            <button class="btn-action" onclick="handleSignUp()">REGISTER ACCOUNT</button>
+            <button class="btn-secondary" onclick="handleLogin()">LOG IN</button>
+            <button class="btn-secondary" onclick="handleGuestLogin()" style="border-color: var(--neon-yellow); color: var(--neon-yellow);">ONE-CLICK GUEST PLAY</button>
+        </div>
+    </div>
+
+    <!-- MODE SELECTION VIEW -->
+    <div id="view-modes" class="view">
+        <h4 style="margin-bottom: 10px; color: var(--neon-blue);">SELECT SIMULATION</h4>
+        <div class="mode-grid">
+            <div class="mode-card">
+                <h4 style="color: var(--neon-pink);">👾 Binary Invaders</h4>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 2px 0 6px 0;">Shoot down falling decimal ships with binary lasers!</p>
+                <button class="btn-action" onclick="launchMode('invaders')">PLAY INVADERS</button>
+            </div>
+            <div class="mode-card">
+                <h4 style="color: var(--neon-yellow);">💣 Wire Defusal</h4>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 2px 0 6px 0;">Solve bomb codes using non-jammed wire channels!</p>
+                <button class="btn-action" onclick="launchMode('bomb')">DEFUSE BOMB</button>
+            </div>
+            <div class="mode-card">
+                <h4 style="color: var(--neon-purple);">🧬 Bit-Shift Lab</h4>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 2px 0 6px 0;">Transform byte values with shift & NOT operations!</p>
+                <button class="btn-action" onclick="launchMode('shift')">ENTER LAB</button>
+            </div>
+            <div class="mode-card">
+                <h4 style="color: var(--neon-green);">⚡ M.I.N.D. 9000 Boss</h4>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 2px 0 6px 0;">Deplete rogue AI health before network shutdown.</p>
+                <button class="btn-action" onclick="launchMode('boss')">FIGHT BOSS</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PLAY ARENA VIEW -->
+    <div id="view-play" class="view">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <div id="mode-title" style="font-size: 0.8rem; font-weight: bold; color: var(--neon-blue);">MODE</div>
+            <div style="font-size: 0.8rem; color: var(--neon-yellow);">SCORE: <span id="score-val">0</span></div>
+        </div>
+
+        <div id="boss-container" style="display: none;">
+            <div class="boss-bar"><div id="boss-fill" class="boss-fill"></div></div>
+        </div>
+
+        <div id="invaders-box" class="invaders-box" style="display: none;">
+            <div id="enemy" class="enemy">42</div>
+        </div>
+
+        <div style="background: rgba(0,0,0,0.4); padding: 10px; border-radius: 6px; text-align: center; margin-bottom: 10px;">
+            <div style="font-size: 0.65rem; color: var(--text-muted);">TARGET DECIMAL</div>
+            <div id="target-val" style="font-size: 2rem; font-weight: bold; color: var(--neon-pink);">0</div>
+        </div>
+
+        <div id="bit-grid" class="bit-grid"></div>
+
+        <div id="op-grid" class="op-grid" style="display: none;">
+            <button class="op-btn" onclick="applyOperator('shl')">&lt;&lt; SHL</button>
+            <button class="op-btn" onclick="applyOperator('shr')">&gt;&gt; SHR</button>
+            <button class="op-btn" onclick="applyOperator('not')">NOT (~)</button>
+            <button class="op-btn" onclick="applyOperator('add')">+1</button>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 10px; font-size: 0.8rem;">
+            Current Byte: <span id="sum-val" style="color: var(--neon-green); font-weight: bold;">0</span>
+        </div>
+
+        <button class="btn-action" onclick="checkAnswer()">EXECUTE OVERRIDE</button>
+    </div>
+
+    <!-- GLOBAL LEADERBOARD VIEW -->
+    <div id="view-leaderboard" class="view">
+        <h4 style="margin-bottom: 8px; color: var(--neon-yellow);">GLOBAL RANKINGS</h4>
+        <div class="lb-mode-selector">
+            <button class="lb-mode-btn active" onclick="loadLeaderboard('invaders')">Invaders</button>
+            <button class="lb-mode-btn" onclick="loadLeaderboard('bomb')">Wire Defusal</button>
+            <button class="lb-mode-btn" onclick="loadLeaderboard('shift')">Bit-Shift</button>
+            <button class="lb-mode-btn" onclick="loadLeaderboard('boss')">Boss</button>
+        </div>
+        <div id="lb-list"></div>
+    </div>
+</div>
+
+<script>
+/* Synthesizer Web Audio API */
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let audioEnabled = false;
+
+function toggleAudio() {
+    audioEnabled = !audioEnabled;
+    document.getElementById('audio-toggle').innerText = audioEnabled ? 'SOUND: ON' : 'SOUND: OFF';
+    document.getElementById('audio-toggle').classList.toggle('on', audioEnabled);
+}
+
+function playNote(freq, type='sine', duration=0.1) {
+    if (!audioEnabled) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+}
+
+/* Firebase Configuration & Initialization */
+const firebaseConfig = {
+  apiKey: "AIzaSyCq_UMFJ5J2zxbX2zbCfgovw94TGuHeyfY",
+  authDomain: "binary-b7ac9.firebaseapp.com",
+  databaseURL: "https://binary-b7ac9-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "binary-b7ac9",
+  storageBucket: "binary-b7ac9.firebasestorage.app",
+  messagingSenderId: "871041429248",
+  appId: "1:871041429248:web:9cc549937006bf3f270de5"
+};
+
+// Initialize Firebase (Compat syntax)
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+
+let currentUser = null;
+let gamerTag = localStorage.getItem('binary_gamer_tag') || "GUEST";
+
+auth.onAuthStateChanged((user) => {
+    if (user) {
+        currentUser = user;
+        gamerTag = user.displayName || localStorage.getItem('binary_gamer_tag') || "Player_" + user.uid.substring(0,4);
+        document.getElementById('player-display').innerText = gamerTag.toUpperCase();
+        switchTab('modes');
+    } else {
+        document.getElementById('player-display').innerText = gamerTag.toUpperCase();
+    }
+});
+
+function handleSignUp() {
+    const email = document.getElementById('auth-email').value;
+    const pass = document.getElementById('auth-pass').value;
+    const name = document.getElementById('auth-username').value || "CyberHacker";
+
+    if (!email || !pass) return alert("Please fill in email and password!");
+
+    auth.createUserWithEmailAndPassword(email, pass)
+        .then((cred) => cred.user.updateProfile({ displayName: name }))
+        .then(() => {
+            localStorage.setItem('binary_gamer_tag', name);
+            gamerTag = name;
+            alert("Registered! Welcome " + name);
+        }).catch(err => alert(err.message));
+}
+
+function handleLogin() {
+    const email = document.getElementById('auth-email').value;
+    const pass = document.getElementById('auth-pass').value;
+    auth.signInWithEmailAndPassword(email, pass).catch(err => alert(err.message));
+}
+
+function handleGuestLogin() {
+    const guestName = prompt("Enter a Gamer Tag:", "Guest_" + Math.floor(Math.random()*1000));
+    if (guestName) {
+        gamerTag = guestName;
+        localStorage.setItem('binary_gamer_tag', guestName);
+        document.getElementById('player-display').innerText = gamerTag.toUpperCase();
+        switchTab('modes');
+    }
+}
+
+/* Game State Management */
+let activeMode = 'invaders';
+let score = 0;
+let targetValue = 0;
+let bitStates = [0,0,0,0,0,0,0,0];
+let bitLocks = [false,false,false,false,false,false,false,false];
+let bitWeights = [128, 64, 32, 16, 8, 4, 2, 1];
+let enemyY = 0;
+let invaderLoop = null;
+let bossHp = 100;
+
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    
+    const targetTab = document.getElementById(`view-${tabId}`);
+    if (targetTab) targetTab.classList.add('active');
+
+    const buttons = document.querySelectorAll('.tab-btn');
+    const tabMap = { 'auth': 0, 'modes': 1, 'play': 2, 'leaderboard': 3 };
+    if (buttons[tabMap[tabId]]) buttons[tabMap[tabId]].classList.add('active');
+
+    if (tabId === 'leaderboard') fetchLeaderboard(activeMode);
+}
+
+function launchMode(mode) {
+    activeMode = mode;
+    score = 0;
+    document.getElementById('score-val').innerText = score;
+    document.getElementById('mode-title').innerText = mode.toUpperCase() + ' MODE';
+    switchTab('play');
+
+    document.getElementById('invaders-box').style.display = (mode === 'invaders') ? 'flex' : 'none';
+    document.getElementById('op-grid').style.display = (mode === 'shift') ? 'grid' : 'none';
+    document.getElementById('boss-container').style.display = (mode === 'boss') ? 'block' : 'none';
+
+    if (mode === 'invaders') startInvaders();
+    else if (mode === 'bomb') startBomb();
+    else if (mode === 'shift') startShift();
+    else if (mode === 'boss') startBoss();
+}
+
+function renderBits() {
+    const grid = document.getElementById('bit-grid');
+    grid.innerHTML = '';
+
+    bitWeights.forEach((weight, i) => {
+        const col = document.createElement('div');
+        col.className = 'bit-col';
+
+        const weightLbl = document.createElement('span');
+        weightLbl.className = 'bit-weight';
+        weightLbl.innerText = weight;
+
+        const btn = document.createElement('button');
+        btn.className = `bit-btn ${bitStates[i] ? 'active' : ''} ${bitLocks[i] ? 'locked' : ''}`;
+        btn.innerText = bitStates[i];
+
+        if (activeMode !== 'shift' && !bitLocks[i]) {
+            btn.onclick = () => {
+                bitStates[i] = bitStates[i] === 0 ? 1 : 0;
+                playNote(bitStates[i] ? 440 : 220, 'sine');
+                renderBits();
+            };
+        }
+
+        col.appendChild(weightLbl);
+        col.appendChild(btn);
+        grid.appendChild(col);
+    });
+
+    const sum = bitStates.reduce((acc, bit, idx) => acc + bit * bitWeights[idx], 0);
+    document.getElementById('sum-val').innerText = sum;
+}
+
+/* 4 Game Modes Engine */
+function startInvaders() {
+    clearInterval(invaderLoop);
+    bitStates = [0,0,0,0,0,0,0,0];
+    bitLocks = [false,false,false,false,false,false,false,false];
+    targetValue = Math.floor(Math.random() * 255) + 1;
+    
+    document.getElementById('target-val').innerText = targetValue;
+    const enemy = document.getElementById('enemy');
+    enemy.innerText = targetValue;
+    enemyY = 0;
+    enemy.style.top = '0px';
+
+    renderBits();
+
+    invaderLoop = setInterval(() => {
+        enemyY += 1.5;
+        enemy.style.top = enemyY + 'px';
+
+        if (enemyY > 100) {
+            clearInterval(invaderLoop);
+            playNote(100, 'sawtooth', 0.4);
+            handleGameOver("BASE BREACHED!");
+        }
+    }, 100);
+}
+
+function startBomb() {
+    bitStates = [0,0,0,0,0,0,0,0];
+    bitLocks = [false,false,false,false,false,false,false,false];
+
+    const lock1 = Math.floor(Math.random() * 8);
+    bitLocks[lock1] = true;
+    bitStates[lock1] = Math.random() > 0.5 ? 1 : 0;
+
+    let validTarget = bitStates[lock1] * bitWeights[lock1];
+    for (let i = 0; i < 8; i++) {
+        if (!bitLocks[i] && Math.random() > 0.5) validTarget += bitWeights[i];
+    }
+    
+    targetValue = validTarget === 0 ? bitWeights[0] : validTarget;
+    document.getElementById('target-val').innerText = targetValue;
+    renderBits();
+}
+
+function startShift() {
+    bitStates = [0,0,0,0,0,0,0,1];
+    bitLocks = [false,false,false,false,false,false,false,false];
+    targetValue = Math.floor(Math.random() * 200) + 10;
+    document.getElementById('target-val').innerText = targetValue;
+    renderBits();
+}
+
+function applyOperator(op) {
+    let currentVal = bitStates.reduce((acc, bit, idx) => acc + bit * bitWeights[idx], 0);
+    if (op === 'shl') currentVal = (currentVal << 1) & 255;
+    if (op === 'shr') currentVal = (currentVal >> 1);
+    if (op === 'not') currentVal = (~currentVal) & 255;
+    if (op === 'add') currentVal = (currentVal + 1) & 255;
+
+    bitStates = currentVal.toString(2).padStart(8, '0').split('').map(Number);
+    playNote(350, 'square');
+    renderBits();
+}
+
+function startBoss() {
+    bossHp = 100;
+    document.getElementById('boss-fill').style.width = '100%';
+    nextBossStage();
+}
+
+function nextBossStage() {
+    bitStates = [0,0,0,0,0,0,0,0];
+    bitLocks = [false,false,false,false,false,false,false,false];
+    targetValue = Math.floor(Math.random() * 255) + 1;
+    document.getElementById('target-val').innerText = targetValue;
+    renderBits();
+}
+
+function checkAnswer() {
+    const sum = bitStates.reduce((acc, bit, idx) => acc + bit * bitWeights[idx], 0);
+
+    if (sum === targetValue) {
+        playNote(600, 'sine', 0.1);
+        score += 100;
+        document.getElementById('score-val').innerText = score;
+
+        if (activeMode === 'invaders') {
+            clearInterval(invaderLoop);
+            startInvaders();
+        } else if (activeMode === 'bomb') {
+            startBomb();
+        } else if (activeMode === 'shift') {
+            startShift();
+        } else if (activeMode === 'boss') {
+            bossHp -= 25;
+            document.getElementById('boss-fill').style.width = bossHp + '%';
+            if (bossHp <= 0) {
+                handleGameOver("M.I.N.D. 9000 DEFEATED!");
+            } else {
+                nextBossStage();
+            }
+        }
+    } else {
+        playNote(150, 'sawtooth', 0.2);
+        handleGameOver("OVERRIDE FAILED!");
+    }
+}
+
+/* Firebase Cloud & Offline Local Leaderboard Sync */
+let localLeaderboards = JSON.parse(localStorage.getItem('binary_leaderboards')) || {
+    invaders: [], bomb: [], shift: [], boss: []
+};
+
+function handleGameOver(msg = "GAME OVER") {
+    alert(`${msg}\nFinal Score: ${score}`);
+    
+    if (score > 0) {
+        // Save local fallback
+        if (!localLeaderboards[activeMode]) localLeaderboards[activeMode] = [];
+        localLeaderboards[activeMode].push({ name: gamerTag, score: score });
+        localLeaderboards[activeMode].sort((a, b) => b.score - a.score);
+        localStorage.setItem('binary_leaderboards', JSON.stringify(localLeaderboards));
+
+        // Save to Firebase Cloud DB
+        try {
+            db.ref(`leaderboards/${activeMode}`).push({ name: gamerTag, score: score });
+        } catch(e) { console.log("DB Offline, fallback to local."); }
+    }
+
+    switchTab('leaderboard');
+}
+
+function fetchLeaderboard(mode) {
+    document.querySelectorAll('.lb-mode-btn').forEach(b => {
+        b.classList.toggle('active', b.innerText.toLowerCase().includes(mode.substring(0,3)));
+    });
+
+    const list = document.getElementById('lb-list');
+    list.innerHTML = '<div style="font-size:0.8rem; text-align:center; padding:10px;">Loading ranks...</div>';
+
+    // Fetch live from Firebase Realtime DB
+    try {
+        db.ref(`leaderboards/${mode}`).orderByChild('score').limitToLast(10).once('value', (snapshot) => {
+            list.innerHTML = '';
+            let scores = [];
+            snapshot.forEach(child => { scores.push(child.val()); });
+            scores.reverse();
+
+            if (scores.length === 0) {
+                list.innerHTML = '<div style="font-size:0.8rem; text-align:center; padding:20px;">No high scores yet!</div>';
+                return;
+            }
+
+            scores.forEach((entry, idx) => {
+                const row = document.createElement('div');
+                row.className = 'lb-row';
+                row.innerHTML = `
+                    <span class="lb-rank">#${idx + 1}</span>
+                    <span class="lb-name">${entry.name}</span>
+                    <span class="lb-score">${entry.score} PTS</span>
+                `;
+                list.appendChild(row);
+            });
+        });
+    } catch(err) {
+        // Fallback to local storage if DB is unreachable
+        loadLocalLeaderboard(mode);
+    }
+}
+
+function loadLocalLeaderboard(mode) {
+    const list = document.getElementById('lb-list');
+    list.innerHTML = '';
+    const ranks = localLeaderboards[mode] || [];
+
+    if (ranks.length === 0) {
+        list.innerHTML = '<div style="font-size:0.8rem; text-align:center; padding:20px;">No high scores registered yet!</div>';
+        return;
+    }
+
+    ranks.slice(0, 10).forEach((entry, idx) => {
+        const row = document.createElement('div');
+        row.className = 'lb-row';
+        row.innerHTML = `
+            <span class="lb-rank">#${idx + 1}</span>
+            <span class="lb-name">${entry.name}</span>
+            <span class="lb-score">${entry.score} PTS</span>
+        `;
+        list.appendChild(row);
+    });
+}
+</script>
+</body>
+</html>
