@@ -566,14 +566,46 @@ function handleGameOver(msg = "PERMAINAN SELESAI") {
     alert(`${msg}\nSkor Akhir: ${score}`);
     
     if (score > 0) {
+        // 1. Simpan/Perbarui secara Lokal (Penyimpanan HP)
         if (!localLeaderboards[activeMode]) localLeaderboards[activeMode] = [];
-        localLeaderboards[activeMode].push({ name: gamerTag, score: score });
+        
+        let existingLocalIndex = localLeaderboards[activeMode].findIndex(item => item.name === gamerTag);
+        if (existingLocalIndex !== -1) {
+            // Jika nama sudah ada secara lokal, update hanya jika skor baru lebih tinggi
+            if (score > localLeaderboards[activeMode][existingLocalIndex].score) {
+                localLeaderboards[activeMode][existingLocalIndex].score = score;
+            }
+        } else {
+            // Jika nama belum ada, tambahkan entri baru
+            localLeaderboards[activeMode].push({ name: gamerTag, score: score });
+        }
+        
         localLeaderboards[activeMode].sort((a, b) => b.score - a.score);
         localStorage.setItem('binary_leaderboards', JSON.stringify(localLeaderboards));
 
+        // 2. Simpan/Perbarui di Database Firebase Cloud
         try {
-            db.ref(`leaderboards/${activeMode}`).push({ name: gamerTag, score: score });
-        } catch(e) { console.log("DB Offline, beralih ke penyimpanan lokal."); }
+            const modeRef = db.ref(`leaderboards/${activeMode}`);
+            
+            // Cari apakah gamerTag ini sudah ada di Firebase
+            modeRef.orderByChild('name').equalTo(gamerTag).once('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    // Nama ditemukan! Ambil key entri yang sudah ada
+                    snapshot.forEach((childSnapshot) => {
+                        const currentData = childSnapshot.val();
+                        // Perbarui skor hanya jika skor baru lebih tinggi dari skor lama
+                        if (score > currentData.score) {
+                            childSnapshot.ref.update({ score: score });
+                        }
+                    });
+                } else {
+                    // Nama belum ada! Buat entri baru
+                    modeRef.push({ name: gamerTag, score: score });
+                }
+            });
+        } catch(e) { 
+            console.log("DB Offline, beralih ke penyimpanan lokal."); 
+        }
     }
 
     switchTab('leaderboard');
