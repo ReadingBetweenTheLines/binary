@@ -103,7 +103,7 @@
             justify-content: space-between;
         }
 
-        /* Invaders Box With Increased Distance Height */
+        /* Area Invader dengan Jarak Tempuh Lebih Panjang */
         .invaders-box {
             height: 240px; background: rgba(0,0,0,0.6); border: 1px solid var(--panel-border);
             border-radius: 8px; position: relative; overflow: hidden; margin-bottom: 10px;
@@ -224,9 +224,9 @@
                 <button class="btn-action" onclick="launchMode('invaders')">MAIN INVADER</button>
             </div>
             <div class="mode-card">
-                <h4 style="color: var(--neon-yellow);">💣 Jinakkan Bom</h4>
-                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 2px 0 6px 0;">Pecahkan kode bom menggunakan jalur kabel yang tidak terkunci!</p>
-                <button class="btn-action" onclick="launchMode('bomb')">JINAKKAN BOM</button>
+                <h4 style="color: var(--neon-yellow);">⏱️ Time Attack</h4>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 2px 0 6px 0;">Selesaikan sebanyak mungkin angka biner sebelum waktu 30 detik habis!</p>
+                <button class="btn-action" onclick="launchMode('time')">PACU WAKTU</button>
             </div>
             <div class="mode-card">
                 <h4 style="color: var(--neon-purple);">🧬 Lab Pergeseran Bit</h4>
@@ -245,6 +245,7 @@
     <div id="view-play" class="view">
         <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
             <div id="mode-title" style="font-size: 0.8rem; font-weight: bold; color: var(--neon-blue);">MODE</div>
+            <div id="timer-box" style="font-size: 0.8rem; color: var(--neon-pink); display: none; font-weight: bold;">WAKTU: <span id="timer-val">30</span>s</div>
             <div style="font-size: 0.8rem; color: var(--neon-yellow);">SKOR: <span id="score-val">0</span></div>
         </div>
 
@@ -277,10 +278,10 @@
     <div id="view-leaderboard" class="view">
         <h4 style="margin-bottom: 8px; color: var(--neon-yellow);">PERINGKAT GLOBAL</h4>
         <div class="lb-mode-selector">
-            <button class="lb-mode-btn active" onclick="loadLeaderboard('invaders')">Invader</button>
-            <button class="lb-mode-btn" onclick="loadLeaderboard('bomb')">Bom</button>
-            <button class="lb-mode-btn" onclick="loadLeaderboard('shift')">Geser Bit</button>
-            <button class="lb-mode-btn" onclick="loadLeaderboard('boss')">Bos</button>
+            <button class="lb-mode-btn active" onclick="fetchLeaderboard('invaders')">Invader</button>
+            <button class="lb-mode-btn" onclick="fetchLeaderboard('time')">Time Attack</button>
+            <button class="lb-mode-btn" onclick="fetchLeaderboard('shift')">Geser Bit</button>
+            <button class="lb-mode-btn" onclick="fetchLeaderboard('boss')">Bos</button>
         </div>
         <div id="lb-list"></div>
     </div>
@@ -384,6 +385,8 @@ let bitWeights = [128, 64, 32, 16, 8, 4, 2, 1];
 let enemyY = 0;
 let invaderLoop = null;
 let bossHp = 100;
+let timeLeft = 30;
+let timerLoop = null;
 
 function switchTab(tabId) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -402,17 +405,21 @@ function switchTab(tabId) {
 function launchMode(mode) {
     activeMode = mode;
     score = 0;
+    clearInterval(timerLoop);
+    clearInterval(invaderLoop);
+
     document.getElementById('score-val').innerText = score;
-    const titles = { 'invaders': 'MODE INVADER', 'bomb': 'MODE BOM', 'shift': 'MODE LAB BIT', 'boss': 'MODE BOS' };
+    const titles = { 'invaders': 'MODE INVADER', 'time': 'MODE TIME ATTACK', 'shift': 'MODE LAB BIT', 'boss': 'MODE BOS' };
     document.getElementById('mode-title').innerText = titles[mode] || mode.toUpperCase();
     switchTab('play');
 
     document.getElementById('invaders-box').style.display = (mode === 'invaders') ? 'flex' : 'none';
+    document.getElementById('timer-box').style.display = (mode === 'time') ? 'block' : 'none';
     document.getElementById('op-grid').style.display = (mode === 'shift') ? 'grid' : 'none';
     document.getElementById('boss-container').style.display = (mode === 'boss') ? 'block' : 'none';
 
     if (mode === 'invaders') startInvaders();
-    else if (mode === 'bomb') startBomb();
+    else if (mode === 'time') startTimeAttack();
     else if (mode === 'shift') startShift();
     else if (mode === 'boss') startBoss();
 }
@@ -462,7 +469,6 @@ function startInvaders() {
 
     renderBits();
 
-    // Jarak tempuh diperpanjang ke 210px
     invaderLoop = setInterval(() => {
         enemyY += 1.5;
         enemy.style.top = enemyY + 'px';
@@ -475,20 +481,29 @@ function startInvaders() {
     }, 100);
 }
 
-function startBomb() {
+function startTimeAttack() {
+    clearInterval(timerLoop);
+    timeLeft = 30;
+    document.getElementById('timer-val').innerText = timeLeft;
+    
+    nextTimeStage();
+
+    timerLoop = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timer-val').innerText = timeLeft;
+
+        if (timeLeft <= 0) {
+            clearInterval(timerLoop);
+            playNote(100, 'sawtooth', 0.4);
+            handleGameOver("WAKTU HABIS!");
+        }
+    }, 1000);
+}
+
+function nextTimeStage() {
     bitStates = [0,0,0,0,0,0,0,0];
     bitLocks = [false,false,false,false,false,false,false,false];
-
-    const lock1 = Math.floor(Math.random() * 8);
-    bitLocks[lock1] = true;
-    bitStates[lock1] = Math.random() > 0.5 ? 1 : 0;
-
-    let validTarget = bitStates[lock1] * bitWeights[lock1];
-    for (let i = 0; i < 8; i++) {
-        if (!bitLocks[i] && Math.random() > 0.5) validTarget += bitWeights[i];
-    }
-    
-    targetValue = validTarget === 0 ? bitWeights[0] : validTarget;
+    targetValue = Math.floor(Math.random() * 255) + 1;
     document.getElementById('target-val').innerText = targetValue;
     renderBits();
 }
@@ -538,8 +553,10 @@ function checkAnswer() {
         if (activeMode === 'invaders') {
             clearInterval(invaderLoop);
             startInvaders();
-        } else if (activeMode === 'bomb') {
-            startBomb();
+        } else if (activeMode === 'time') {
+            timeLeft += 3; // Bonus waktu +3 detik
+            document.getElementById('timer-val').innerText = timeLeft;
+            nextTimeStage();
         } else if (activeMode === 'shift') {
             startShift();
         } else if (activeMode === 'boss') {
@@ -553,53 +570,58 @@ function checkAnswer() {
         }
     } else {
         playNote(150, 'sawtooth', 0.2);
-        handleGameOver("OVERRIDE GAGAL!");
+        if (activeMode === 'time') {
+            timeLeft = Math.max(0, timeLeft - 5); // Penalti -5 detik jika salah
+            document.getElementById('timer-val').innerText = timeLeft;
+            if (timeLeft <= 0) {
+                clearInterval(timerLoop);
+                handleGameOver("WAKTU HABIS!");
+            }
+        } else {
+            handleGameOver("OVERRIDE GAGAL!");
+        }
     }
 }
 
-/* Sinkronisasi Peringkat Cloud & Lokal Offline */
+/* Sinkronisasi Peringkat Cloud & Lokal Offline (Pembaruan Tanpa Duplikasi) */
 let localLeaderboards = JSON.parse(localStorage.getItem('binary_leaderboards')) || {
-    invaders: [], bomb: [], shift: [], boss: []
+    invaders: [], time: [], shift: [], boss: []
 };
 
 function handleGameOver(msg = "PERMAINAN SELESAI") {
+    clearInterval(timerLoop);
+    clearInterval(invaderLoop);
     alert(`${msg}\nSkor Akhir: ${score}`);
     
     if (score > 0) {
-        // 1. Simpan/Perbarui secara Lokal (Penyimpanan HP)
+        // 1. Simpan/Perbarui secara Lokal
         if (!localLeaderboards[activeMode]) localLeaderboards[activeMode] = [];
         
         let existingLocalIndex = localLeaderboards[activeMode].findIndex(item => item.name === gamerTag);
         if (existingLocalIndex !== -1) {
-            // Jika nama sudah ada secara lokal, update hanya jika skor baru lebih tinggi
             if (score > localLeaderboards[activeMode][existingLocalIndex].score) {
                 localLeaderboards[activeMode][existingLocalIndex].score = score;
             }
         } else {
-            // Jika nama belum ada, tambahkan entri baru
             localLeaderboards[activeMode].push({ name: gamerTag, score: score });
         }
         
         localLeaderboards[activeMode].sort((a, b) => b.score - a.score);
         localStorage.setItem('binary_leaderboards', JSON.stringify(localLeaderboards));
 
-        // 2. Simpan/Perbarui di Database Firebase Cloud
+        // 2. Simpan/Perbarui di Firebase Database
         try {
             const modeRef = db.ref(`leaderboards/${activeMode}`);
             
-            // Cari apakah gamerTag ini sudah ada di Firebase
             modeRef.orderByChild('name').equalTo(gamerTag).once('value', (snapshot) => {
                 if (snapshot.exists()) {
-                    // Nama ditemukan! Ambil key entri yang sudah ada
                     snapshot.forEach((childSnapshot) => {
                         const currentData = childSnapshot.val();
-                        // Perbarui skor hanya jika skor baru lebih tinggi dari skor lama
                         if (score > currentData.score) {
                             childSnapshot.ref.update({ score: score });
                         }
                     });
                 } else {
-                    // Nama belum ada! Buat entri baru
                     modeRef.push({ name: gamerTag, score: score });
                 }
             });
@@ -617,7 +639,6 @@ function fetchLeaderboard(mode) {
     });
 
     const list = document.getElementById('lb-list');
-    
     loadLocalLeaderboard(mode);
 
     let loadedFromCloud = false;
