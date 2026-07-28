@@ -45,7 +45,21 @@
             box-shadow: 0 0 25px rgba(56, 189, 248, 0.15);
             overflow: hidden;
             position: relative;
+            transition: border-color 0.3s;
         }
+
+        /* Efek Shake & Rage untuk Bos */
+        .shake { animation: shakeAnim 0.3s ease-in-out; }
+        @keyframes shakeAnim {
+            0% { transform: translate(0, 0); }
+            20% { transform: translate(-5px, 5px); }
+            40% { transform: translate(5px, -5px); }
+            60% { transform: translate(-5px, -5px); }
+            80% { transform: translate(5px, 5px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        .rage-mode { border-color: var(--neon-pink) !important; box-shadow: 0 0 30px var(--neon-pink) !important; }
 
         .header {
             display: flex;
@@ -103,7 +117,7 @@
             justify-content: space-between;
         }
 
-        /* Area Invader dengan Jarak Tempuh Lebih Panjang */
+        /* Area Invader */
         .invaders-box {
             height: 240px; background: rgba(0,0,0,0.6); border: 1px solid var(--panel-border);
             border-radius: 8px; position: relative; overflow: hidden; margin-bottom: 10px;
@@ -116,11 +130,17 @@
             box-shadow: 0 0 10px var(--neon-pink);
         }
 
-        .boss-bar {
-            width: 100%; height: 10px; background: #1e293b; border-radius: 5px;
-            overflow: hidden; margin-bottom: 10px; border: 1px solid var(--neon-pink);
+        /* UI Boss Elegan */
+        .boss-panel {
+            background: rgba(0,0,0,0.5); border: 1px solid var(--neon-pink);
+            border-radius: 8px; padding: 8px; margin-bottom: 10px;
         }
-        .boss-fill { height: 100%; width: 100%; background: var(--neon-pink); transition: width 0.2s; }
+        .boss-header { display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px; font-weight: bold; }
+        .boss-bar {
+            width: 100%; height: 12px; background: #1e293b; border-radius: 6px;
+            overflow: hidden; border: 1px solid var(--neon-pink);
+        }
+        .boss-fill { height: 100%; width: 100%; background: var(--neon-pink); transition: width 0.3s, background-color 0.3s; }
 
         /* Bit Grid UI */
         .bit-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin-bottom: 15px; }
@@ -182,7 +202,7 @@
 </head>
 <body>
 
-<div class="game-window">
+<div id="game-window" class="game-window">
     <div class="header">
         <div class="brand">BINARY OVERDRIVE</div>
         <div style="display: flex; gap: 8px; align-items: center;">
@@ -235,7 +255,7 @@
             </div>
             <div class="mode-card">
                 <h4 style="color: var(--neon-green);">⚡ Bos M.I.N.D. 9000</h4>
-                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 2px 0 6px 0;">Kalahkan nyawa AI jahat sebelum jaringan ditutup.</p>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 2px 0 6px 0;">Kalahkan AI jahat serangannya yang penuh dengan glitch & serangan waktu!</p>
                 <button class="btn-action" onclick="launchMode('boss')">LAWAN BOS</button>
             </div>
         </div>
@@ -249,7 +269,12 @@
             <div style="font-size: 0.8rem; color: var(--neon-yellow);">SKOR: <span id="score-val">0</span></div>
         </div>
 
-        <div id="boss-container" style="display: none;">
+        <!-- Panel Pertarungan Bos M.I.N.D. 9000 -->
+        <div id="boss-container" class="boss-panel" style="display: none;">
+            <div class="boss-header">
+                <span id="boss-status" style="color: var(--neon-pink);">⚡ M.I.N.D. 9000</span>
+                <span id="boss-timer-lbl" style="color: var(--neon-yellow);">SERANGAN AI: <span id="boss-timer-val">10</span>s</span>
+            </div>
             <div class="boss-bar"><div id="boss-fill" class="boss-fill"></div></div>
         </div>
 
@@ -324,7 +349,7 @@ const firebaseConfig = {
   appId: "1:871041429248:web:9cc549937006bf3f270de5"
 };
 
-// Inisialisasi Firebase (Sintaks Compat)
+// Inisialisasi Firebase
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
@@ -385,8 +410,16 @@ let bitWeights = [128, 64, 32, 16, 8, 4, 2, 1];
 let enemyY = 0;
 let invaderLoop = null;
 let bossHp = 100;
+let bossTimer = 10;
+let bossTimerLoop = null;
 let timeLeft = 30;
 let timerLoop = null;
+
+function triggerShake() {
+    const win = document.getElementById('game-window');
+    win.classList.add('shake');
+    setTimeout(() => win.classList.remove('shake'), 300);
+}
 
 function switchTab(tabId) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -407,9 +440,11 @@ function launchMode(mode) {
     score = 0;
     clearInterval(timerLoop);
     clearInterval(invaderLoop);
+    clearInterval(bossTimerLoop);
 
+    document.getElementById('game-window').classList.remove('rage-mode');
     document.getElementById('score-val').innerText = score;
-    const titles = { 'invaders': 'MODE INVADER', 'time': 'MODE TIME ATTACK', 'shift': 'MODE LAB BIT', 'boss': 'MODE BOS' };
+    const titles = { 'invaders': 'MODE INVADER', 'time': 'MODE TIME ATTACK', 'shift': 'MODE LAB BIT', 'boss': 'MODE BOS M.I.N.D.' };
     document.getElementById('mode-title').innerText = titles[mode] || mode.toUpperCase();
     switchTab('play');
 
@@ -454,7 +489,7 @@ function renderBits() {
     });
 }
 
-/* Mesin 4 Mode Permainan */
+/* Mesin Permainan */
 function startInvaders() {
     clearInterval(invaderLoop);
     bitStates = [0,0,0,0,0,0,0,0];
@@ -528,41 +563,104 @@ function applyOperator(op) {
     renderBits();
 }
 
+/* Peningkatan Mode Bos M.I.N.D. 9000 */
 function startBoss() {
     bossHp = 100;
-    document.getElementById('boss-fill').style.width = '100%';
+    updateBossVisuals();
     nextBossStage();
 }
 
+function updateBossVisuals() {
+    const fill = document.getElementById('boss-fill');
+    const status = document.getElementById('boss-status');
+    const win = document.getElementById('game-window');
+
+    fill.style.width = bossHp + '%';
+
+    if (bossHp > 50) {
+        fill.style.backgroundColor = 'var(--neon-pink)';
+        status.innerText = '⚡ M.I.N.D. 9000 (NORMAL)';
+        status.style.color = 'var(--neon-pink)';
+        win.classList.remove('rage-mode');
+    } else if (bossHp > 25) {
+        fill.style.backgroundColor = 'var(--neon-yellow)';
+        status.innerText = '🔥 M.I.N.D. 9000 (WASPADA)';
+        status.style.color = 'var(--neon-yellow)';
+        win.classList.remove('rage-mode');
+    } else {
+        fill.style.backgroundColor = 'var(--neon-purple)';
+        status.innerText = '💀 M.I.N.D. 9000 (AMUKAN / RAGE)';
+        status.style.color = 'var(--neon-purple)';
+        win.classList.add('rage-mode'); // Berkedip neon
+    }
+}
+
 function nextBossStage() {
+    clearInterval(bossTimerLoop);
     bitStates = [0,0,0,0,0,0,0,0];
     bitLocks = [false,false,false,false,false,false,false,false];
-    targetValue = Math.floor(Math.random() * 255) + 1;
+
+    // Glitch Attack: Jika HP Bos < 50%, Kunci 1 Bit acak!
+    if (bossHp <= 50) {
+        const lockIdx = Math.floor(Math.random() * 8);
+        bitLocks[lockIdx] = true;
+        bitStates[lockIdx] = Math.random() > 0.5 ? 1 : 0;
+    }
+
+    // Hitung target yang Valid meskipun ada bit yang terkunci
+    let validTarget = 0;
+    for (let i = 0; i < 8; i++) {
+        if (bitLocks[i]) validTarget += bitStates[i] * bitWeights[i];
+        else if (Math.random() > 0.4) validTarget += bitWeights[i];
+    }
+    targetValue = validTarget === 0 ? 64 : validTarget;
     document.getElementById('target-val').innerText = targetValue;
     renderBits();
+
+    // Reset dan Jalankan Timer Serangan AI (10 detik per soal)
+    bossTimer = 10;
+    document.getElementById('boss-timer-val').innerText = bossTimer;
+
+    bossTimerLoop = setInterval(() => {
+        bossTimer--;
+        document.getElementById('boss-timer-val').innerText = bossTimer;
+
+        if (bossTimer <= 0) {
+            playNote(120, 'sawtooth', 0.3);
+            triggerShake();
+            // Penalti Serangan AI: Reset kombinasi bit yang disusun pemain!
+            bitStates = bitLocks.map((isLocked, idx) => isLocked ? bitStates[idx] : 0);
+            renderBits();
+            bossTimer = 10; 
+        }
+    }, 1000);
 }
 
 function checkAnswer() {
     const sum = bitStates.reduce((acc, bit, idx) => acc + bit * bitWeights[idx], 0);
 
     if (sum === targetValue) {
-        playNote(600, 'sine', 0.1);
-        score += 100;
+        playNote(600, 'sine', 0.15);
+        score += 150;
         document.getElementById('score-val').innerText = score;
 
         if (activeMode === 'invaders') {
             clearInterval(invaderLoop);
             startInvaders();
         } else if (activeMode === 'time') {
-            timeLeft += 3; // Bonus waktu +3 detik
+            timeLeft += 3;
             document.getElementById('timer-val').innerText = timeLeft;
             nextTimeStage();
         } else if (activeMode === 'shift') {
             startShift();
         } else if (activeMode === 'boss') {
             bossHp -= 25;
-            document.getElementById('boss-fill').style.width = bossHp + '%';
+            triggerShake();
+            updateBossVisuals();
+
             if (bossHp <= 0) {
+                clearInterval(bossTimerLoop);
+                playNote(800, 'square', 0.5);
                 handleGameOver("M.I.N.D. 9000 BERHASIL DIKALAHKAN!");
             } else {
                 nextBossStage();
@@ -570,20 +668,26 @@ function checkAnswer() {
         }
     } else {
         playNote(150, 'sawtooth', 0.2);
+        triggerShake();
+
         if (activeMode === 'time') {
-            timeLeft = Math.max(0, timeLeft - 5); // Penalti -5 detik jika salah
+            timeLeft = Math.max(0, timeLeft - 5);
             document.getElementById('timer-val').innerText = timeLeft;
             if (timeLeft <= 0) {
                 clearInterval(timerLoop);
                 handleGameOver("WAKTU HABIS!");
             }
+        } else if (activeMode === 'boss') {
+            // Penalti salah saat lawan bos: Bos menyerap serangan!
+            bossTimer = Math.max(1, bossTimer - 3);
+            document.getElementById('boss-timer-val').innerText = bossTimer;
         } else {
             handleGameOver("OVERRIDE GAGAL!");
         }
     }
 }
 
-/* Sinkronisasi Peringkat Cloud & Lokal Offline (Pembaruan Tanpa Duplikasi) */
+/* Sinkronisasi Peringkat Cloud & Lokal Offline */
 let localLeaderboards = JSON.parse(localStorage.getItem('binary_leaderboards')) || {
     invaders: [], time: [], shift: [], boss: []
 };
@@ -591,10 +695,10 @@ let localLeaderboards = JSON.parse(localStorage.getItem('binary_leaderboards')) 
 function handleGameOver(msg = "PERMAINAN SELESAI") {
     clearInterval(timerLoop);
     clearInterval(invaderLoop);
+    clearInterval(bossTimerLoop);
     alert(`${msg}\nSkor Akhir: ${score}`);
     
     if (score > 0) {
-        // 1. Simpan/Perbarui secara Lokal
         if (!localLeaderboards[activeMode]) localLeaderboards[activeMode] = [];
         
         let existingLocalIndex = localLeaderboards[activeMode].findIndex(item => item.name === gamerTag);
@@ -609,7 +713,6 @@ function handleGameOver(msg = "PERMAINAN SELESAI") {
         localLeaderboards[activeMode].sort((a, b) => b.score - a.score);
         localStorage.setItem('binary_leaderboards', JSON.stringify(localLeaderboards));
 
-        // 2. Simpan/Perbarui di Firebase Database
         try {
             const modeRef = db.ref(`leaderboards/${activeMode}`);
             
