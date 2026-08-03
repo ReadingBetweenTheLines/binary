@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "firebase": "^12.17.0",
+    "lucide-react": "^1.28.0"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.5.4",
+    "oxlint": "^1.77.0",
+    "postcss": "^8.5.25",
+    "tailwindcss": "^4.3.3"
+  }
+}
