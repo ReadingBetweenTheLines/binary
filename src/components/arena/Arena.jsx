@@ -3,7 +3,7 @@ import { useGame } from '../../context/GameContext';
 import { generateQuestionForRound } from '../../utils/questionGenerator';
 
 const ALL_BIT_WEIGHTS = [128, 64, 32, 16, 8, 4, 2, 1];
-const QUESTIONS_PER_ROUND = 3; // Number of questions needed to win 1 round
+const QUESTIONS_PER_ROUND = 3;
 
 export default function Arena() {
   const { gameState, updateRoomState } = useGame();
@@ -12,7 +12,7 @@ export default function Arena() {
   if (!activeMatch) return null;
 
   const { matchKey, teamA, teamB } = activeMatch;
-  const currentMatchRound = activeMatch.currentMatchRound || 1; // Round 1, 2, or 3
+  const currentMatchRound = activeMatch.currentMatchRound || 1;
 
   const [bitsA, setBitsA] = useState([0, 0, 0, 0, 0, 0, 0, 0]);
   const [bitsB, setBitsB] = useState([0, 0, 0, 0, 0, 0, 0, 0]);
@@ -35,99 +35,102 @@ export default function Arena() {
     });
   };
 
-  // Helper when a team wins a round
-  const handleTeamWinsRound = (winningTeamKey) => {
+  // Shared Core Logic for process answers (Works for both Host Arena & StudentPad)
+  const processAnswerForTeam = (winningTeamKey, nextBitLen = null) => {
     const isA = winningTeamKey === 'teamA';
-    const newRoundsWonA = (teamA.roundsWon || 0) + (isA ? 1 : 0);
-    const newRoundsWonB = (teamB.roundsWon || 0) + (isA ? 0 : 1);
+    const activeTeam = isA ? teamA : teamB;
+    const targetBitLen = nextBitLen || activeTeam.bitLength || 5;
+    const solvedInRound = (activeTeam.questionsSolvedInRound || 0) + 1;
 
-    // Check match win condition (First to 2 round wins)
-    if (newRoundsWonA >= 2) {
-      handleFinishMatch(teamA.name);
+    // Check Round Win Condition (3 solved questions in current round)
+    if (solvedInRound >= QUESTIONS_PER_ROUND) {
+      const newRoundsWonA = (teamA.roundsWon || 0) + (isA ? 1 : 0);
+      const newRoundsWonB = (teamB.roundsWon || 0) + (isA ? 0 : 1);
+
+      // Check Match Win Condition (First to 2 Round Wins)
+      if (newRoundsWonA >= 2 || newRoundsWonB >= 2) {
+        const winnerName = newRoundsWonA >= 2 ? teamA.name : teamB.name;
+        handleFinishMatch(winnerName);
+        return;
+      }
+
+      // Advance to Next Match Round & Reset Progress
+      const nextMatchRound = currentMatchRound + 1;
+      const initialQA = generateQuestionForRound(nextMatchRound, 5, 0);
+      const initialQB = generateQuestionForRound(nextMatchRound, 5, 0);
+
+      setBitsA([0, 0, 0, 0, 0, 0, 0, 0]);
+      setBitsB([0, 0, 0, 0, 0, 0, 0, 0]);
+      setGuessA('');
+      setGuessB('');
+
+      updateRoomState({
+        ...gameState,
+        activeMatch: {
+          ...activeMatch,
+          currentMatchRound: nextMatchRound,
+          teamA: {
+            ...teamA,
+            roundsWon: newRoundsWonA,
+            questionsSolvedInRound: 0,
+            bitLength: 5,
+            questionType: initialQA.type,
+            target: initialQA.target,
+            targetBit: initialQA.targetBit || null,
+            nextBitLength: initialQA.nextBitLength || null,
+            levelLabel: initialQA.label
+          },
+          teamB: {
+            ...teamB,
+            roundsWon: newRoundsWonB,
+            questionsSolvedInRound: 0,
+            bitLength: 5,
+            questionType: initialQB.type,
+            target: initialQB.target,
+            targetBit: initialQB.targetBit || null,
+            nextBitLength: initialQB.nextBitLength || null,
+            levelLabel: initialQB.label
+          }
+        }
+      });
       return;
     }
-    if (newRoundsWonB >= 2) {
-      handleFinishMatch(teamB.name);
-      return;
+
+    // Normal Next Question inside Same Round
+    const nextQ = generateQuestionForRound(currentMatchRound, targetBitLen, solvedInRound);
+
+    if (isA) {
+      setGuessA('');
+      setBitsA([0, 0, 0, 0, 0, 0, 0, 0]);
+    } else {
+      setGuessB('');
+      setBitsB([0, 0, 0, 0, 0, 0, 0, 0]);
     }
-
-    // Otherwise, advance to next match round and reset round progress
-    const nextMatchRound = currentMatchRound + 1;
-    const initialQA = generateQuestionForRound(nextMatchRound, 5, 0);
-    const initialQB = generateQuestionForRound(nextMatchRound, 5, 0);
-
-    setBitsA([0, 0, 0, 0, 0, 0, 0, 0]);
-    setBitsB([0, 0, 0, 0, 0, 0, 0, 0]);
-    setGuessA('');
-    setGuessB('');
-
-    alert(`🎉 ${isA ? teamA.name : teamB.name} memenangkan RONDE ${currentMatchRound}! Memulai RONDE ${nextMatchRound}...`);
 
     updateRoomState({
       ...gameState,
       activeMatch: {
         ...activeMatch,
-        currentMatchRound: nextMatchRound,
-        teamA: {
-          ...teamA,
-          roundsWon: newRoundsWonA,
-          questionsSolvedInRound: 0,
-          bitLength: 5,
-          questionType: initialQA.type,
-          target: initialQA.target,
-          targetBit: initialQA.targetBit || null,
-          nextBitLength: initialQA.nextBitLength || null,
-          levelLabel: initialQA.label
-        },
-        teamB: {
-          ...teamB,
-          roundsWon: newRoundsWonB,
-          questionsSolvedInRound: 0,
-          bitLength: 5,
-          questionType: initialQB.type,
-          target: initialQB.target,
-          targetBit: initialQB.targetBit || null,
-          nextBitLength: initialQB.nextBitLength || null,
-          levelLabel: initialQB.label
+        [winningTeamKey]: {
+          ...activeTeam,
+          bitLength: targetBitLen,
+          questionsSolvedInRound: solvedInRound,
+          questionType: nextQ.type,
+          target: nextQ.target,
+          targetBit: nextQ.targetBit || null,
+          nextBitLength: nextQ.nextBitLength || null,
+          levelLabel: nextQ.label
         }
       }
     });
   };
 
-  // Submit Logic for Team A
   const submitAnswerA = () => {
     const isChallenge = teamA.questionType === 'UNLOCK_CHALLENGE';
 
     if (isChallenge) {
       if (parseInt(guessA, 10) === teamA.targetBit) {
-        const newBitLen = teamA.nextBitLength;
-        const solvedInRound = (teamA.questionsSolvedInRound || 0) + 1;
-
-        if (solvedInRound >= QUESTIONS_PER_ROUND) {
-          handleTeamWinsRound('teamA');
-          return;
-        }
-
-        const nextQ = generateQuestionForRound(currentMatchRound, newBitLen, 0);
-        setGuessA('');
-        setBitsA([0, 0, 0, 0, 0, 0, 0, 0]);
-
-        updateRoomState({
-          ...gameState,
-          activeMatch: {
-            ...activeMatch,
-            teamA: {
-              ...teamA,
-              bitLength: newBitLen,
-              questionsSolvedInRound: solvedInRound,
-              questionType: nextQ.type,
-              target: nextQ.target,
-              targetBit: nextQ.targetBit || null,
-              nextBitLength: nextQ.nextBitLength || null,
-              levelLabel: nextQ.label
-            }
-          }
-        });
+        processAnswerForTeam('teamA', teamA.nextBitLength);
       } else {
         alert(`Salah! Nilai bobot bit berikutnya bukan ${guessA}. Perhatikan kelipatan 2!`);
         setGuessA('');
@@ -141,70 +144,18 @@ export default function Arena() {
     const currentSum = activeBits.reduce((acc, bit, idx) => acc + bit * activeWeights[idx], 0);
 
     if (currentSum === teamA.target) {
-      const solvedInRound = (teamA.questionsSolvedInRound || 0) + 1;
-
-      if (solvedInRound >= QUESTIONS_PER_ROUND) {
-        handleTeamWinsRound('teamA');
-        return;
-      }
-
-      const nextQ = generateQuestionForRound(currentMatchRound, activeLen, solvedInRound);
-      setBitsA([0, 0, 0, 0, 0, 0, 0, 0]);
-
-      updateRoomState({
-        ...gameState,
-        activeMatch: {
-          ...activeMatch,
-          teamA: {
-            ...teamA,
-            questionsSolvedInRound: solvedInRound,
-            questionType: nextQ.type,
-            target: nextQ.target,
-            targetBit: nextQ.targetBit || null,
-            nextBitLength: nextQ.nextBitLength || null,
-            levelLabel: nextQ.label
-          }
-        }
-      });
+      processAnswerForTeam('teamA');
     } else {
       alert(`Jawaban ${teamA.name} belum cocok (${currentSum} / ${teamA.target})!`);
     }
   };
 
-  // Submit Logic for Team B
   const submitAnswerB = () => {
     const isChallenge = teamB.questionType === 'UNLOCK_CHALLENGE';
 
     if (isChallenge) {
       if (parseInt(guessB, 10) === teamB.targetBit) {
-        const newBitLen = teamB.nextBitLength;
-        const solvedInRound = (teamB.questionsSolvedInRound || 0) + 1;
-
-        if (solvedInRound >= QUESTIONS_PER_ROUND) {
-          handleTeamWinsRound('teamB');
-          return;
-        }
-
-        const nextQ = generateQuestionForRound(currentMatchRound, newBitLen, 0);
-        setGuessB('');
-        setBitsB([0, 0, 0, 0, 0, 0, 0, 0]);
-
-        updateRoomState({
-          ...gameState,
-          activeMatch: {
-            ...activeMatch,
-            teamB: {
-              ...teamB,
-              bitLength: newBitLen,
-              questionsSolvedInRound: solvedInRound,
-              questionType: nextQ.type,
-              target: nextQ.target,
-              targetBit: nextQ.targetBit || null,
-              nextBitLength: nextQ.nextBitLength || null,
-              levelLabel: nextQ.label
-            }
-          }
-        });
+        processAnswerForTeam('teamB', teamB.nextBitLength);
       } else {
         alert(`Salah! Nilai bobot bit berikutnya bukan ${guessB}. Perhatikan kelipatan 2!`);
         setGuessB('');
@@ -218,31 +169,7 @@ export default function Arena() {
     const currentSum = activeBits.reduce((acc, bit, idx) => acc + bit * activeWeights[idx], 0);
 
     if (currentSum === teamB.target) {
-      const solvedInRound = (teamB.questionsSolvedInRound || 0) + 1;
-
-      if (solvedInRound >= QUESTIONS_PER_ROUND) {
-        handleTeamWinsRound('teamB');
-        return;
-      }
-
-      const nextQ = generateQuestionForRound(currentMatchRound, activeLen, solvedInRound);
-      setBitsB([0, 0, 0, 0, 0, 0, 0, 0]);
-
-      updateRoomState({
-        ...gameState,
-        activeMatch: {
-          ...activeMatch,
-          teamB: {
-            ...teamB,
-            questionsSolvedInRound: solvedInRound,
-            questionType: nextQ.type,
-            target: nextQ.target,
-            targetBit: nextQ.targetBit || null,
-            nextBitLength: nextQ.nextBitLength || null,
-            levelLabel: nextQ.label
-          }
-        }
-      });
+      processAnswerForTeam('teamB');
     } else {
       alert(`Jawaban ${teamB.name} belum cocok (${currentSum} / ${teamB.target})!`);
     }

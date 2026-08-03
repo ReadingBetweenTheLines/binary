@@ -3,6 +3,7 @@ import { useGame } from '../../context/GameContext';
 import { generateQuestionForRound } from '../../utils/questionGenerator';
 
 const ALL_BIT_WEIGHTS = [128, 64, 32, 16, 8, 4, 2, 1];
+const QUESTIONS_PER_ROUND = 6; // Number of questions needed to win 1 round
 
 export default function StudentPad() {
   const { gameState, myTeam, setMyTeam, updateRoomState } = useGame();
@@ -98,10 +99,13 @@ export default function StudentPad() {
 
   const teamKey = isTeamA ? 'teamA' : 'teamB';
   const teamData = activeMatch[teamKey];
-  const roundLevel = activeMatch.roundLevel || 1;
+  const teamA = activeMatch.teamA;
+  const teamB = activeMatch.teamB;
+  const matchKey = activeMatch.matchKey;
+  const currentMatchRound = activeMatch.currentMatchRound || 1;
   const isChallenge = teamData.questionType === 'UNLOCK_CHALLENGE';
 
-  const bits = teamData.bits || [0,0,0,0,0,0,0,0];
+  const bits = teamData.bits || [0, 0, 0, 0, 0, 0, 0, 0];
   const activeLen = teamData.bitLength || 5;
 
   const activeWeights = ALL_BIT_WEIGHTS.slice(8 - activeLen);
@@ -125,32 +129,141 @@ export default function StudentPad() {
 
   const currentSum = activeBits.reduce((acc, bit, idx) => acc + bit * activeWeights[idx], 0);
 
+  // Helper when a team wins a round from student view
+  const handleProcessAnswer = (targetBitLen = activeLen) => {
+    const solvedInRound = (teamData.questionsSolvedInRound || 0) + 1;
+
+    // Check Round Win Condition (3 solved questions in current round)
+    if (solvedInRound >= QUESTIONS_PER_ROUND) {
+      const isA = teamKey === 'teamA';
+      const newRoundsWonA = (teamA.roundsWon || 0) + (isA ? 1 : 0);
+      const newRoundsWonB = (teamB.roundsWon || 0) + (isA ? 0 : 1);
+
+      // Check Match Win Condition (First to 2 Round Wins)
+      if (newRoundsWonA >= 2 || newRoundsWonB >= 2) {
+        const winnerName = newRoundsWonA >= 2 ? teamA.name : teamB.name;
+        const currentMatches = { ...gameState.matches };
+
+        currentMatches[matchKey] = {
+          ...currentMatches[matchKey],
+          winner: winnerName,
+          completed: true
+        };
+
+        const allKeys = Object.keys(currentMatches);
+        const allCompleted = allKeys.every((k) => currentMatches[k].completed);
+
+        if (allCompleted) {
+          const winners = allKeys.map((k) => currentMatches[k].winner);
+
+          if (winners.length === 1) {
+            updateRoomState({
+              ...gameState,
+              status: 'FINISHED',
+              champion: winners[0],
+              matches: currentMatches,
+              activeMatch: null
+            });
+            return;
+          }
+
+          const nextRoundMatches = {};
+          for (let i = 0; i < winners.length; i += 2) {
+            nextRoundMatches[`m${i / 2 + 1}`] = {
+              id: `m_${i / 2}`,
+              t1: winners[i] || 'TBD',
+              t2: winners[i + 1] || 'TBD',
+              winner: null,
+              completed: false
+            };
+          }
+
+          updateRoomState({
+            ...gameState,
+            status: 'BRACKET',
+            matches: nextRoundMatches,
+            activeMatch: null
+          });
+          return;
+        }
+
+        updateRoomState({
+          ...gameState,
+          status: 'BRACKET',
+          matches: currentMatches,
+          activeMatch: null
+        });
+        return;
+      }
+
+      // Advance to Next Match Round & Reset Progress
+      const nextMatchRound = currentMatchRound + 1;
+      const initialQA = generateQuestionForRound(nextMatchRound, 5, 0);
+      const initialQB = generateQuestionForRound(nextMatchRound, 5, 0);
+
+      setGuess('');
+
+      updateRoomState({
+        ...gameState,
+        activeMatch: {
+          ...activeMatch,
+          currentMatchRound: nextMatchRound,
+          teamA: {
+            ...teamA,
+            roundsWon: newRoundsWonA,
+            questionsSolvedInRound: 0,
+            bitLength: 5,
+            questionType: initialQA.type,
+            target: initialQA.target,
+            targetBit: initialQA.targetBit || null,
+            nextBitLength: initialQA.nextBitLength || null,
+            bits: [0, 0, 0, 0, 0, 0, 0, 0],
+            levelLabel: initialQA.label
+          },
+          teamB: {
+            ...teamB,
+            roundsWon: newRoundsWonB,
+            questionsSolvedInRound: 0,
+            bitLength: 5,
+            questionType: initialQB.type,
+            target: initialQB.target,
+            targetBit: initialQB.targetBit || null,
+            nextBitLength: initialQB.nextBitLength || null,
+            bits: [0, 0, 0, 0, 0, 0, 0, 0],
+            levelLabel: initialQB.label
+          }
+        }
+      });
+      return;
+    }
+
+    // Normal Next Question inside Same Round
+    const nextQ = generateQuestionForRound(currentMatchRound, targetBitLen, solvedInRound);
+    setGuess('');
+
+    updateRoomState({
+      ...gameState,
+      activeMatch: {
+        ...activeMatch,
+        [teamKey]: {
+          ...teamData,
+          bitLength: targetBitLen,
+          questionsSolvedInRound: solvedInRound,
+          questionType: nextQ.type,
+          target: nextQ.target,
+          targetBit: nextQ.targetBit || null,
+          nextBitLength: nextQ.nextBitLength || null,
+          bits: [0, 0, 0, 0, 0, 0, 0, 0],
+          levelLabel: nextQ.label
+        }
+      }
+    });
+  };
+
   const handleSubmit = () => {
     if (isChallenge) {
       if (parseInt(guess, 10) === teamData.targetBit) {
-        const newBitLen = teamData.nextBitLength;
-        const newScore = teamData.score + 100;
-        const nextQ = generateQuestionForRound(roundLevel, newBitLen, 0);
-
-        setGuess('');
-        updateRoomState({
-          ...gameState,
-          activeMatch: {
-            ...activeMatch,
-            [teamKey]: {
-              ...teamData,
-              score: newScore,
-              bitLength: newBitLen,
-              questionType: nextQ.type,
-              target: nextQ.target,
-              targetBit: nextQ.targetBit || null,
-              nextBitLength: nextQ.nextBitLength || null,
-              questionsSolvedInLevel: 0,
-              bits: [0, 0, 0, 0, 0, 0, 0, 0],
-              levelLabel: nextQ.label
-            }
-          }
-        });
+        handleProcessAnswer(teamData.nextBitLength);
       } else {
         alert(`Salah! Nilai bobot bit berikutnya bukan ${guess}. Perhatikan pola kelipatan 2!`);
         setGuess('');
@@ -159,43 +272,28 @@ export default function StudentPad() {
     }
 
     if (currentSum === teamData.target) {
-      const newScore = teamData.score + 100;
-      const solved = (teamData.questionsSolvedInLevel || 0) + 1;
-      const nextQ = generateQuestionForRound(roundLevel, activeLen, solved);
-
-      updateRoomState({
-        ...gameState,
-        activeMatch: {
-          ...activeMatch,
-          [teamKey]: {
-            ...teamData,
-            score: newScore,
-            questionType: nextQ.type,
-            target: nextQ.target,
-            targetBit: nextQ.targetBit || null,
-            nextBitLength: nextQ.nextBitLength || null,
-            questionsSolvedInLevel: nextQ.questionsSolvedInLevel,
-            bits: [0, 0, 0, 0, 0, 0, 0, 0],
-            levelLabel: nextQ.label
-          }
-        }
-      });
+      handleProcessAnswer(activeLen);
     } else {
       alert(`Jawaban Belum Tepat! Total Saat Ini: ${currentSum} / Target: ${teamData.target}`);
     }
   };
+
+  const solvedCount = teamData.questionsSolvedInRound || 0;
 
   return (
     <div className="min-h-screen bg-slate-950 text-white p-4 flex flex-col justify-between">
       <div>
         <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-800">
           <span className="text-xs font-bold text-sky-400 font-mono">{myTeam}</span>
-          <span className="text-xs font-mono text-yellow-400 font-bold">SKOR: {teamData.score}</span>
+          <span className="text-xs font-mono text-yellow-400 font-bold">
+            RONDE MENANG: {teamData.roundsWon || 0} / 2
+          </span>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 text-center mb-4 shadow-inner">
-          <div className="text-[10px] text-amber-400 uppercase tracking-widest font-mono font-bold mb-1">
-            {teamData.levelLabel || "LEVEL 1: 5-BIT MODE"}
+          <div className="flex justify-between items-center text-[10px] text-amber-400 uppercase tracking-widest font-mono font-bold mb-1 px-1">
+            <span>{teamData.levelLabel || "5-BIT MODE"}</span>
+            <span>SOAL: {solvedCount} / {QUESTIONS_PER_ROUND}</span>
           </div>
 
           {isChallenge ? (
