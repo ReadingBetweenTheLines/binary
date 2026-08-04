@@ -63,15 +63,16 @@ export default function BracketTree() {
     };
 
     const handleResetTournament = () => {
-        if (window.confirm("Apakah Anda yakin ingin meriset seluruh bagan dan kembali ke pengaturan?")) {
+        if (window.confirm("Apakah Anda yakin ingin meriset seluruh bagan dan menghapus kelompok?")) {
             updateRoomState({
                 ...gameState,
                 status: 'LOBBY',
+                teams: [],      // Clears registered team names
+                matches: {},    // Clears tournament matches
                 activeMatch: null
             });
         }
     };
-
     const getRoundTitle = () => {
         if (currentRoundLevel === 1) return "BABAK KUALIFIKASI (DESIMAL BINER)";
         if (currentRoundLevel === 2) return "BABAK SEMIFINAL (LOGIC GATES)";

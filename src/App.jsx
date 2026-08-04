@@ -4,6 +4,7 @@ import StudentPad from './components/mobile/StudentPad';
 import BracketTree from './components/bracket/BracketTree';
 import Arena from './components/arena/Arena';
 
+
 export default function App() {
   const [role, setRole] = useState(null); // null | 'TEACHER' | 'STUDENT'
   const [teacherPass, setTeacherPass] = useState('');
