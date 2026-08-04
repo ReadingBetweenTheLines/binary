@@ -10,7 +10,7 @@ import {
 } from '../../utils/sound';
 
 const ALL_BIT_WEIGHTS = [128, 64, 32, 16, 8, 4, 2, 1];
-const QUESTIONS_PER_ROUND = 3;
+const QUESTIONS_PER_ROUND = 6; // Set to 6 questions per round
 
 export default function StudentPad() {
   const { gameState, myTeam, setMyTeam, updateRoomState } = useGame();
@@ -147,13 +147,13 @@ export default function StudentPad() {
   const handleProcessAnswer = (targetBitLen = activeLen) => {
     const solvedInRound = (teamData.questionsSolvedInRound || 0) + 1;
 
-    // Check Round Win Condition
+    // Check Round Victory (6 Questions Solved)
     if (solvedInRound >= QUESTIONS_PER_ROUND) {
       const isA = teamKey === 'teamA';
       const newRoundsWonA = (teamA.roundsWon || 0) + (isA ? 1 : 0);
       const newRoundsWonB = (teamB.roundsWon || 0) + (isA ? 0 : 1);
 
-      // Check Match Win Condition
+      // Check Match Victory
       if (newRoundsWonA >= 2 || newRoundsWonB >= 2) {
         playChampionSound();
         const winnerName = newRoundsWonA >= 2 ? teamA.name : teamB.name;
@@ -211,7 +211,7 @@ export default function StudentPad() {
         return;
       }
 
-      // Round Win (Advance to Next Match Round)
+      // Round Victory Reset for Next Round
       playRoundWinSound();
       const nextMatchRound = currentMatchRound + 1;
       const initialQA = generateQuestionForRound(activeMatch.roundLevel || 1, 5, 0);
@@ -228,7 +228,7 @@ export default function StudentPad() {
             ...teamA,
             roundsWon: newRoundsWonA,
             questionsSolvedInRound: 0,
-            bitLength: 5,
+            bitLength: initialQA.bitLength || 5,
             questionType: initialQA.type,
             target: initialQA.target,
             targetBit: initialQA.targetBit || null,
@@ -240,7 +240,7 @@ export default function StudentPad() {
             ...teamB,
             roundsWon: newRoundsWonB,
             questionsSolvedInRound: 0,
-            bitLength: 5,
+            bitLength: initialQB.bitLength || 5,
             questionType: initialQB.type,
             target: initialQB.target,
             targetBit: initialQB.targetBit || null,
@@ -253,7 +253,6 @@ export default function StudentPad() {
       return;
     }
 
-    // Correct Answer in Same Round
     playCorrectSound();
     const nextQ = generateQuestionForRound(activeMatch.roundLevel || 1, targetBitLen, solvedInRound);
     setGuess('');
@@ -264,7 +263,7 @@ export default function StudentPad() {
         ...activeMatch,
         [teamKey]: {
           ...teamData,
-          bitLength: targetBitLen,
+          bitLength: nextQ.bitLength || targetBitLen,
           questionsSolvedInRound: solvedInRound,
           questionType: nextQ.type,
           target: nextQ.target,
@@ -283,7 +282,7 @@ export default function StudentPad() {
         handleProcessAnswer(teamData.nextBitLength);
       } else {
         playWrongSound();
-        alert(`Jawaban Salah! Angka kelipatan bit berikutnya bukan ${guess}. Tidak ada penalti score/ronde.`);
+        alert(`Jawaban Salah! Angka kelipatan bit berikutnya bukan ${guess}.`);
         setGuess('');
       }
       return;

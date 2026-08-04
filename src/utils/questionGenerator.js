@@ -1,35 +1,38 @@
 const ALL_BIT_WEIGHTS = [128, 64, 32, 16, 8, 4, 2, 1];
 
 export function generateQuestionForRound(roundLevel = 1, currentBitLength = 5, questionsSolvedInLevel = 0) {
+  // ROUND 4 (GRAND FINAL): Always force 8-bit mode so 8-bit target numbers (0-255) are solvable!
+  const effectiveBitLength = roundLevel === 4 ? 8 : currentBitLength;
+
   // Check for unlock challenge after 3 solved questions in Rounds 1-3
-  if (questionsSolvedInLevel >= 3 && currentBitLength < 8 && roundLevel < 4) {
+  if (questionsSolvedInLevel >= 3 && effectiveBitLength < 8 && roundLevel < 4) {
     const nextBitMap = { 5: 32, 6: 64, 7: 128 };
-    const nextBitVal = nextBitMap[currentBitLength];
-    const nextLength = currentBitLength + 1;
+    const nextBitVal = nextBitMap[effectiveBitLength];
+    const nextLength = effectiveBitLength + 1;
 
     return {
       type: 'UNLOCK_CHALLENGE',
       target: 0,
       targetBit: nextBitVal,
       nextBitLength: nextLength,
-      bitLength: currentBitLength,
+      bitLength: effectiveBitLength,
       questionsSolvedInLevel: 0,
-      label: `🔓 TANTANGAN BUKA BIT KE-${nextLength} (Berapa bobot setelah ${Math.pow(2, currentBitLength - 1)}?)`
+      label: `🔓 TANTANGAN BUKA BIT KE-${nextLength} (Berapa bobot setelah ${Math.pow(2, effectiveBitLength - 1)}?)`
     };
   }
 
   // Generate round-specific question types
   switch (roundLevel) {
     case 1:
-      return generateStandardDecimal(currentBitLength, questionsSolvedInLevel);
+      return generateStandardDecimal(effectiveBitLength, questionsSolvedInLevel);
     case 2:
-      return generateLogicGateQuestion(currentBitLength, questionsSolvedInLevel);
+      return generateLogicGateQuestion(effectiveBitLength, questionsSolvedInLevel);
     case 3:
-      return generateBitShiftQuestion(currentBitLength, questionsSolvedInLevel);
+      return generateBitShiftQuestion(effectiveBitLength, questionsSolvedInLevel);
     case 4:
       return generateTwosComplementQuestion(8, questionsSolvedInLevel);
     default:
-      return generateStandardDecimal(currentBitLength, questionsSolvedInLevel);
+      return generateStandardDecimal(effectiveBitLength, questionsSolvedInLevel);
   }
 }
 
@@ -104,7 +107,7 @@ function generateBitShiftQuestion(bitLength, solvedCount) {
 function generateTwosComplementQuestion(bitLength = 8, solvedCount) {
   const negVal = -(Math.floor(Math.random() * 100) + 1); // Negative decimal (-1 to -100)
   
-  // Calculate Two's Complement unsigned integer equivalent for 8 bits
+  // Calculate Two's Complement unsigned integer equivalent for 8 bits (0 - 255)
   const twosCompUnsigned = (256 + negVal) & 255;
 
   return {
@@ -112,7 +115,7 @@ function generateTwosComplementQuestion(bitLength = 8, solvedCount) {
     target: twosCompUnsigned,
     targetBit: null,
     nextBitLength: null,
-    bitLength: 8,
+    bitLength: 8, // Guaranteed 8-Bit
     questionsSolvedInLevel: solvedCount,
     label: `GRAND FINAL | TWO'S COMPLEMENT: Konversi Desimal ${negVal}`
   };

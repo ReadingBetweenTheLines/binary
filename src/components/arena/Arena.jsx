@@ -1,9 +1,16 @@
 import React, { useState } from 'react';
 import { useGame } from '../../context/GameContext';
 import { generateQuestionForRound } from '../../utils/questionGenerator';
+import { 
+  playClickSound, 
+  playCorrectSound, 
+  playWrongSound, 
+  playRoundWinSound, 
+  playChampionSound 
+} from '../../utils/sound';
 
 const ALL_BIT_WEIGHTS = [128, 64, 32, 16, 8, 4, 2, 1];
-const QUESTIONS_PER_ROUND = 3;
+const QUESTIONS_PER_ROUND = 6; // Set to 6 questions per round
 
 export default function Arena() {
   const { gameState, updateRoomState } = useGame();
@@ -20,6 +27,7 @@ export default function Arena() {
   const [guessB, setGuessB] = useState('');
 
   const toggleBitA = (idx) => {
+    playClickSound();
     setBitsA((prev) => {
       const copy = [...prev];
       copy[idx] = copy[idx] === 0 ? 1 : 0;
@@ -28,6 +36,7 @@ export default function Arena() {
   };
 
   const toggleBitB = (idx) => {
+    playClickSound();
     setBitsB((prev) => {
       const copy = [...prev];
       copy[idx] = copy[idx] === 0 ? 1 : 0;
@@ -38,23 +47,27 @@ export default function Arena() {
   const processAnswerForTeam = (winningTeamKey, nextBitLen = null) => {
     const isA = winningTeamKey === 'teamA';
     const activeTeam = isA ? teamA : teamB;
-    const targetBitLen = nextBitLen || activeTeam.bitLength || 5;
+    const currentBitLen = activeTeam.bitLength || 5;
+    const targetBitLen = nextBitLen || currentBitLen;
     const solvedInRound = (activeTeam.questionsSolvedInRound || 0) + 1;
 
-    // Round Won
+    // Check Round Victory (6 Questions Solved)
     if (solvedInRound >= QUESTIONS_PER_ROUND) {
       const newRoundsWonA = (teamA.roundsWon || 0) + (isA ? 1 : 0);
       const newRoundsWonB = (teamB.roundsWon || 0) + (isA ? 0 : 1);
 
-      // Match Won Condition
+      // Check Match Victory (Best of 3 -> 2 Round Wins)
       if (newRoundsWonA >= 2 || newRoundsWonB >= 2) {
+        playChampionSound();
         const winnerName = newRoundsWonA >= 2 ? teamA.name : teamB.name;
         handleFinishMatch(winnerName);
         return;
       }
 
-      // Next Round In Match
+      playRoundWinSound();
       const nextMatchRound = currentMatchRound + 1;
+      
+      // Reset bit length to starting 5 bits for the fresh round while respecting stage level
       const initialQA = generateQuestionForRound(activeMatch.roundLevel || 1, 5, 0);
       const initialQB = generateQuestionForRound(activeMatch.roundLevel || 1, 5, 0);
 
@@ -72,7 +85,7 @@ export default function Arena() {
             ...teamA,
             roundsWon: newRoundsWonA,
             questionsSolvedInRound: 0,
-            bitLength: 5,
+            bitLength: initialQA.bitLength || 5,
             questionType: initialQA.type,
             target: initialQA.target,
             targetBit: initialQA.targetBit || null,
@@ -83,7 +96,7 @@ export default function Arena() {
             ...teamB,
             roundsWon: newRoundsWonB,
             questionsSolvedInRound: 0,
-            bitLength: 5,
+            bitLength: initialQB.bitLength || 5,
             questionType: initialQB.type,
             target: initialQB.target,
             targetBit: initialQB.targetBit || null,
@@ -95,7 +108,7 @@ export default function Arena() {
       return;
     }
 
-    // Normal Next Question inside Same Round
+    playCorrectSound();
     const nextQ = generateQuestionForRound(activeMatch.roundLevel || 1, targetBitLen, solvedInRound);
 
     if (isA) {
@@ -112,7 +125,7 @@ export default function Arena() {
         ...activeMatch,
         [winningTeamKey]: {
           ...activeTeam,
-          bitLength: targetBitLen,
+          bitLength: nextQ.bitLength || targetBitLen,
           questionsSolvedInRound: solvedInRound,
           questionType: nextQ.type,
           target: nextQ.target,
@@ -131,7 +144,9 @@ export default function Arena() {
       if (parseInt(guessA, 10) === teamA.targetBit) {
         processAnswerForTeam('teamA', teamA.nextBitLength);
       } else {
-        alert(`Jawaban Salah! Angka kelipatan bit berikutnya bukan ${guessA}. Tidak ada penalti score/ronde.`);
+        playWrongSound();
+        alert(`Jawaban Salah! Angka kelipatan bit berikutnya bukan ${guessA}.`);
+        setGuessA('');
       }
       return;
     }
@@ -144,7 +159,8 @@ export default function Arena() {
     if (currentSum === teamA.target) {
       processAnswerForTeam('teamA');
     } else {
-      alert(`Jawaban ${teamA.name} belum tepat (${currentSum} / ${teamA.target}). Coba sesuaikan bit.`);
+      playWrongSound();
+      alert(`Jawaban ${teamA.name} belum cocok (${currentSum} / ${teamA.target})!`);
     }
   };
 
@@ -155,7 +171,9 @@ export default function Arena() {
       if (parseInt(guessB, 10) === teamB.targetBit) {
         processAnswerForTeam('teamB', teamB.nextBitLength);
       } else {
-        alert(`Jawaban Salah! Angka kelipatan bit berikutnya bukan ${guessB}. Tidak ada penalti score/ronde.`);
+        playWrongSound();
+        alert(`Jawaban Salah! Angka kelipatan bit berikutnya bukan ${guessB}.`);
+        setGuessB('');
       }
       return;
     }
@@ -168,7 +186,8 @@ export default function Arena() {
     if (currentSum === teamB.target) {
       processAnswerForTeam('teamB');
     } else {
-      alert(`Jawaban ${teamB.name} belum tepat (${currentSum} / ${teamB.target}). Coba sesuaikan bit.`);
+      playWrongSound();
+      alert(`Jawaban ${teamB.name} belum cocok (${currentSum} / ${teamB.target})!`);
     }
   };
 
@@ -244,13 +263,13 @@ export default function Arena() {
             ARENA DUEL: {matchKey?.toUpperCase()} — RONDE {currentMatchRound} / 3
           </h2>
           <p className="text-xs text-slate-400">
-            Selesaikan {QUESTIONS_PER_ROUND} soal per ronde. Menangkan 2 ronde untuk memenangi match!
+            Setiap ronde membutuhkan {QUESTIONS_PER_ROUND} soal selesai. Menangkan 2 ronde untuk menang match!
           </p>
         </div>
 
         <div className="flex items-center gap-4">
           <div className="text-sm font-bold text-yellow-400 bg-slate-950 px-4 py-2 rounded-lg border border-yellow-500/30">
-            🏆 RONDE: {teamA.roundsWon || 0} - {teamB.roundsWon || 0}
+            🏆 RONDE MENANG: {teamA.roundsWon || 0} - {teamB.roundsWon || 0}
           </div>
 
           <button
