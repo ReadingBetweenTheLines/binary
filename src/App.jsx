@@ -1,19 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGame } from './context/GameContext';
 import StudentPad from './components/mobile/StudentPad';
 import BracketTree from './components/bracket/BracketTree';
 import Arena from './components/arena/Arena';
-import SetupForm from './components/setup/SetupForm';
+import SetupForm from './components/lobby/SetupForm';
+import { playClickSound, playChampionSound } from './utils/sound';
 
 export default function App() {
-  const [role, setRole] = useState(null);
+  const [role, setRole] = useState(null); // null | 'TEACHER' | 'STUDENT'
   const [teacherPass, setTeacherPass] = useState('');
   const [isTeacherAuthed, setIsTeacherAuthed] = useState(false);
   const { gameState, updateRoomState } = useGame();
 
+  // Trigger victory fanfare sound on tournament complete
+  useEffect(() => {
+    if (gameState?.status === 'FINISHED') {
+      playChampionSound();
+    }
+  }, [gameState?.status]);
+
   const handleTeacherAuth = (e) => {
     e.preventDefault();
     if (teacherPass === 'choom') {
+      playClickSound();
       setIsTeacherAuthed(true);
     } else {
       alert('Kode Akses Guru Salah!');
@@ -21,6 +30,7 @@ export default function App() {
   };
 
   const handleRestartTournament = () => {
+    playClickSound();
     updateRoomState({
       ...gameState,
       status: 'LOBBY',
@@ -29,6 +39,7 @@ export default function App() {
     });
   };
 
+  // 1. Role Selection Screen
   if (!role) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex flex-col justify-center items-center p-6 font-mono">
@@ -39,7 +50,10 @@ export default function App() {
           <div className="flex flex-col gap-4">
             <button
               type="button"
-              onClick={() => setRole('STUDENT')}
+              onClick={() => {
+                playClickSound();
+                setRole('STUDENT');
+              }}
               className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-sm transition shadow-lg cursor-pointer"
             >
               📱 MASUK SEBAGAI SISWA
@@ -47,7 +61,10 @@ export default function App() {
 
             <button
               type="button"
-              onClick={() => setRole('TEACHER')}
+              onClick={() => {
+                playClickSound();
+                setRole('TEACHER');
+              }}
               className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-sky-400 border border-sky-500/30 font-bold rounded-xl text-sm transition cursor-pointer"
             >
               🖥️ MASUK SEBAGAI GURU / HOST
@@ -58,6 +75,7 @@ export default function App() {
     );
   }
 
+  // 2. Student View
   if (role === 'STUDENT') {
     return (
       <div>
@@ -65,7 +83,10 @@ export default function App() {
           <span className="text-slate-400">MODE SISWA</span>
           <button
             type="button"
-            onClick={() => setRole(null)}
+            onClick={() => {
+              playClickSound();
+              setRole(null);
+            }}
             className="text-slate-500 hover:text-slate-300 underline cursor-pointer"
           >
             Keluar
@@ -76,6 +97,7 @@ export default function App() {
     );
   }
 
+  // 3. Teacher Password Screen
   if (role === 'TEACHER' && !isTeacherAuthed) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex flex-col justify-center items-center p-6 font-mono">
@@ -94,7 +116,10 @@ export default function App() {
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setRole(null)}
+                onClick={() => {
+                  playClickSound();
+                  setRole(null);
+                }}
                 className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded transition cursor-pointer"
               >
                 KEMBALI
@@ -112,7 +137,7 @@ export default function App() {
     );
   }
 
-  // CHAMPION VICTORY SCREEN
+  // 4. Tournament Champion Victory View
   if (gameState?.status === 'FINISHED') {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex flex-col justify-center items-center p-6 font-mono">
@@ -138,6 +163,7 @@ export default function App() {
     );
   }
 
+  // 5. Main Teacher Dashboard View
   return (
     <div className="min-h-screen bg-slate-950 text-white p-6 font-mono">
       <header className="flex justify-between items-center mb-6 pb-4 border-b border-slate-800">
@@ -148,6 +174,7 @@ export default function App() {
         <button
           type="button"
           onClick={() => {
+            playClickSound();
             setIsTeacherAuthed(false);
             setRole(null);
           }}

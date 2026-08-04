@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import { useGame } from '../../context/GameContext';
 import { generateQuestionForRound } from '../../utils/questionGenerator';
+import { 
+  playClickSound, 
+  playCorrectSound, 
+  playWrongSound, 
+  playRoundWinSound, 
+  playChampionSound 
+} from '../../utils/sound';
 
 const ALL_BIT_WEIGHTS = [128, 64, 32, 16, 8, 4, 2, 1];
 const QUESTIONS_PER_ROUND = 3;
@@ -17,6 +24,7 @@ export default function StudentPad() {
       const formattedName = customTeamName.trim().toUpperCase();
       if (!formattedName) return;
 
+      playClickSound();
       const currentTeams = gameState.teams || [];
       if (!currentTeams.includes(formattedName)) {
         updateRoomState({
@@ -60,7 +68,10 @@ export default function StudentPad() {
                 <button
                   key={team}
                   type="button"
-                  onClick={() => setMyTeam(team)}
+                  onClick={() => {
+                    playClickSound();
+                    setMyTeam(team);
+                  }}
                   className="w-full py-2.5 px-3 bg-slate-950 border border-slate-800 hover:border-sky-400 text-slate-300 font-bold rounded text-xs text-left cursor-pointer transition"
                 >
                   👥 {team}
@@ -88,7 +99,10 @@ export default function StudentPad() {
         </div>
         <button
           type="button"
-          onClick={() => setMyTeam(null)}
+          onClick={() => {
+            playClickSound();
+            setMyTeam(null);
+          }}
           className="text-xs text-slate-500 underline hover:text-slate-300 cursor-pointer"
         >
           Ganti / Ubah Nama Kelompok
@@ -112,6 +126,7 @@ export default function StudentPad() {
   const activeBits = bits.slice(8 - activeLen);
 
   const handleToggleBit = (arrayIdx) => {
+    playClickSound();
     const updatedBits = [...bits];
     updatedBits[arrayIdx] = updatedBits[arrayIdx] === 0 ? 1 : 0;
 
@@ -132,14 +147,15 @@ export default function StudentPad() {
   const handleProcessAnswer = (targetBitLen = activeLen) => {
     const solvedInRound = (teamData.questionsSolvedInRound || 0) + 1;
 
-    // Check Round Win
+    // Check Round Win Condition
     if (solvedInRound >= QUESTIONS_PER_ROUND) {
       const isA = teamKey === 'teamA';
       const newRoundsWonA = (teamA.roundsWon || 0) + (isA ? 1 : 0);
       const newRoundsWonB = (teamB.roundsWon || 0) + (isA ? 0 : 1);
 
-      // Match Win Condition
+      // Check Match Win Condition
       if (newRoundsWonA >= 2 || newRoundsWonB >= 2) {
+        playChampionSound();
         const winnerName = newRoundsWonA >= 2 ? teamA.name : teamB.name;
         const currentMatches = { ...gameState.matches };
 
@@ -195,7 +211,8 @@ export default function StudentPad() {
         return;
       }
 
-      // Next Round in Match
+      // Round Win (Advance to Next Match Round)
+      playRoundWinSound();
       const nextMatchRound = currentMatchRound + 1;
       const initialQA = generateQuestionForRound(activeMatch.roundLevel || 1, 5, 0);
       const initialQB = generateQuestionForRound(activeMatch.roundLevel || 1, 5, 0);
@@ -236,7 +253,8 @@ export default function StudentPad() {
       return;
     }
 
-    // Normal Next Question
+    // Correct Answer in Same Round
+    playCorrectSound();
     const nextQ = generateQuestionForRound(activeMatch.roundLevel || 1, targetBitLen, solvedInRound);
     setGuess('');
 
@@ -264,6 +282,7 @@ export default function StudentPad() {
       if (parseInt(guess, 10) === teamData.targetBit) {
         handleProcessAnswer(teamData.nextBitLength);
       } else {
+        playWrongSound();
         alert(`Jawaban Salah! Angka kelipatan bit berikutnya bukan ${guess}. Tidak ada penalti score/ronde.`);
         setGuess('');
       }
@@ -273,6 +292,7 @@ export default function StudentPad() {
     if (currentSum === teamData.target) {
       handleProcessAnswer(activeLen);
     } else {
+      playWrongSound();
       alert(`Jawaban Belum Tepat! Total Saat Ini: ${currentSum} / Target: ${teamData.target}.`);
     }
   };
