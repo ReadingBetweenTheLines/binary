@@ -8,14 +8,17 @@ export default function SetupForm() {
   const liveTeams = gameState.teams || [];
   const [teams, setTeams] = useState([]);
 
-  // Merge student custom names into default slots
+  // FIXED: Initialize teams array safely WITHOUT resetting on every gameState change
   useEffect(() => {
-    const merged = [];
-    for (let i = 0; i < count; i++) {
-      merged.push(liveTeams[i] || `KELOMPOK ${i + 1}`);
-    }
-    setTeams(merged);
-  }, [count, gameState.teams]);
+    setTeams((prev) => {
+      const merged = [];
+      for (let i = 0; i < count; i++) {
+        // Keep existing user-selected team if present, otherwise grab from registered or default
+        merged.push(prev[i] || liveTeams[i] || `KELOMPOK ${i + 1}`);
+      }
+      return merged;
+    });
+  }, [count]); // Only run when changing team count!
 
   // Combine live registered teams with slot array so ALL student teams show in dropdowns
   const availableOptions = Array.from(new Set([...teams, ...liveTeams]));
