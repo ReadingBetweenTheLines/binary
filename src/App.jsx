@@ -3,7 +3,7 @@ import { useGame } from './context/GameContext';
 import StudentPad from './components/mobile/StudentPad';
 import BracketTree from './components/bracket/BracketTree';
 import Arena from './components/arena/Arena';
-import SetupForm from './components/mobile/SetupForm';
+import SetupForm from './components/lobby/SetupForm';
 
 export default function App() {
   const [role, setRole] = useState(null); // null | 'TEACHER' | 'STUDENT'
