@@ -143,8 +143,6 @@ export default function StudentPad() {
     });
   };
 
-  const currentSum = activeBits.reduce((acc, bit, idx) => acc + bit * activeWeights[idx], 0);
-
   const handleProcessAnswer = (targetBitLen = activeLen) => {
     const solvedInRound = (teamData.questionsSolvedInRound || 0) + 1;
 
@@ -258,7 +256,6 @@ export default function StudentPad() {
     const nextQ = generateQuestionForRound(roundLevel, targetBitLen, solvedInRound);
     setGuess('');
 
-    // Always use nextQ.bitLength to ensure exact bit alignment
     const resolvedBitLen = nextQ.bitLength || targetBitLen;
 
     updateRoomState({
@@ -292,11 +289,13 @@ export default function StudentPad() {
       return;
     }
 
+    const currentSum = activeBits.reduce((acc, bit, idx) => acc + bit * activeWeights[idx], 0);
+
     if (currentSum === teamData.target) {
       handleProcessAnswer(activeLen);
     } else {
       playWrongSound();
-      alert(`Jawaban Belum Tepat! Total Saat Ini: ${currentSum} / Target: ${teamData.target}.`);
+      alert(`Jawaban Belum Tepat! Periksa kembali susunan bit Anda.`);
     }
   };
 
@@ -335,12 +334,9 @@ export default function StudentPad() {
               />
             </div>
           ) : (
-            <>
+            <div className="py-2">
               <div className="text-4xl font-extrabold text-sky-400 my-1">{teamData.target}</div>
-              <div className="text-xs text-slate-400">
-                Jumlah Bit: <span className="text-white font-bold">{currentSum}</span>
-              </div>
-            </>
+            </div>
           )}
         </div>
 
