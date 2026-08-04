@@ -212,7 +212,6 @@ export default function StudentPad() {
         return;
       }
 
-      // Reset for next match round using correct starting bit length
       playRoundWinSound();
       const nextMatchRound = currentMatchRound + 1;
       const startingBits = roundLevel === 4 ? 8 : 5;
@@ -259,13 +258,16 @@ export default function StudentPad() {
     const nextQ = generateQuestionForRound(roundLevel, targetBitLen, solvedInRound);
     setGuess('');
 
+    // Always use nextQ.bitLength to ensure exact bit alignment
+    const resolvedBitLen = nextQ.bitLength || targetBitLen;
+
     updateRoomState({
       ...gameState,
       activeMatch: {
         ...activeMatch,
         [teamKey]: {
           ...teamData,
-          bitLength: nextQ.bitLength || targetBitLen,
+          bitLength: resolvedBitLen,
           questionsSolvedInRound: solvedInRound,
           questionType: nextQ.type,
           target: nextQ.target,

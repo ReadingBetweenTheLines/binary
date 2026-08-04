@@ -57,7 +57,7 @@ export default function Arena() {
       const newRoundsWonA = (teamA.roundsWon || 0) + (isA ? 1 : 0);
       const newRoundsWonB = (teamB.roundsWon || 0) + (isA ? 0 : 1);
 
-      // Check Match Victory (Best of 3 -> 2 Round Wins)
+      // Check Match Victory
       if (newRoundsWonA >= 2 || newRoundsWonB >= 2) {
         playChampionSound();
         const winnerName = newRoundsWonA >= 2 ? teamA.name : teamB.name;
@@ -68,7 +68,6 @@ export default function Arena() {
       playRoundWinSound();
       const nextMatchRound = currentMatchRound + 1;
       
-      // Starting bit length: Round 4 (Grand Final) ALWAYS gets 8 bits, otherwise default 5 bits
       const startingBits = roundLevel === 4 ? 8 : 5;
       const initialQA = generateQuestionForRound(roundLevel, startingBits, 0);
       const initialQB = generateQuestionForRound(roundLevel, startingBits, 0);
@@ -121,13 +120,16 @@ export default function Arena() {
       setBitsB([0, 0, 0, 0, 0, 0, 0, 0]);
     }
 
+    // Always use nextQ.bitLength to ensure exact bit alignment
+    const resolvedBitLen = nextQ.bitLength || targetBitLen;
+
     updateRoomState({
       ...gameState,
       activeMatch: {
         ...activeMatch,
         [winningTeamKey]: {
           ...activeTeam,
-          bitLength: nextQ.bitLength || targetBitLen,
+          bitLength: resolvedBitLen,
           questionsSolvedInRound: solvedInRound,
           questionType: nextQ.type,
           target: nextQ.target,
