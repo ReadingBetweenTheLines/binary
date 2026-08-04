@@ -10,7 +10,7 @@ import {
 } from '../../utils/sound';
 
 const ALL_BIT_WEIGHTS = [128, 64, 32, 16, 8, 4, 2, 1];
-const QUESTIONS_PER_ROUND = 6; // Set to 6 questions per round
+const QUESTIONS_PER_ROUND = 6;
 
 export default function Arena() {
   const { gameState, updateRoomState } = useGame();
@@ -20,6 +20,7 @@ export default function Arena() {
 
   const { matchKey, teamA, teamB } = activeMatch;
   const currentMatchRound = activeMatch.currentMatchRound || 1;
+  const roundLevel = activeMatch.roundLevel || 1;
 
   const [bitsA, setBitsA] = useState([0, 0, 0, 0, 0, 0, 0, 0]);
   const [bitsB, setBitsB] = useState([0, 0, 0, 0, 0, 0, 0, 0]);
@@ -47,7 +48,7 @@ export default function Arena() {
   const processAnswerForTeam = (winningTeamKey, nextBitLen = null) => {
     const isA = winningTeamKey === 'teamA';
     const activeTeam = isA ? teamA : teamB;
-    const currentBitLen = activeTeam.bitLength || 5;
+    const currentBitLen = activeTeam.bitLength || (roundLevel === 4 ? 8 : 5);
     const targetBitLen = nextBitLen || currentBitLen;
     const solvedInRound = (activeTeam.questionsSolvedInRound || 0) + 1;
 
@@ -67,9 +68,10 @@ export default function Arena() {
       playRoundWinSound();
       const nextMatchRound = currentMatchRound + 1;
       
-      // Reset bit length to starting 5 bits for the fresh round while respecting stage level
-      const initialQA = generateQuestionForRound(activeMatch.roundLevel || 1, 5, 0);
-      const initialQB = generateQuestionForRound(activeMatch.roundLevel || 1, 5, 0);
+      // Starting bit length: Round 4 (Grand Final) ALWAYS gets 8 bits, otherwise default 5 bits
+      const startingBits = roundLevel === 4 ? 8 : 5;
+      const initialQA = generateQuestionForRound(roundLevel, startingBits, 0);
+      const initialQB = generateQuestionForRound(roundLevel, startingBits, 0);
 
       setBitsA([0, 0, 0, 0, 0, 0, 0, 0]);
       setBitsB([0, 0, 0, 0, 0, 0, 0, 0]);
@@ -85,7 +87,7 @@ export default function Arena() {
             ...teamA,
             roundsWon: newRoundsWonA,
             questionsSolvedInRound: 0,
-            bitLength: initialQA.bitLength || 5,
+            bitLength: initialQA.bitLength || startingBits,
             questionType: initialQA.type,
             target: initialQA.target,
             targetBit: initialQA.targetBit || null,
@@ -96,7 +98,7 @@ export default function Arena() {
             ...teamB,
             roundsWon: newRoundsWonB,
             questionsSolvedInRound: 0,
-            bitLength: initialQB.bitLength || 5,
+            bitLength: initialQB.bitLength || startingBits,
             questionType: initialQB.type,
             target: initialQB.target,
             targetBit: initialQB.targetBit || null,
@@ -109,7 +111,7 @@ export default function Arena() {
     }
 
     playCorrectSound();
-    const nextQ = generateQuestionForRound(activeMatch.roundLevel || 1, targetBitLen, solvedInRound);
+    const nextQ = generateQuestionForRound(roundLevel, targetBitLen, solvedInRound);
 
     if (isA) {
       setGuessA('');
@@ -151,7 +153,7 @@ export default function Arena() {
       return;
     }
 
-    const activeLen = teamA.bitLength || 5;
+    const activeLen = teamA.bitLength || (roundLevel === 4 ? 8 : 5);
     const activeWeights = ALL_BIT_WEIGHTS.slice(8 - activeLen);
     const activeBits = bitsA.slice(8 - activeLen);
     const currentSum = activeBits.reduce((acc, bit, idx) => acc + bit * activeWeights[idx], 0);
@@ -178,7 +180,7 @@ export default function Arena() {
       return;
     }
 
-    const activeLen = teamB.bitLength || 5;
+    const activeLen = teamB.bitLength || (roundLevel === 4 ? 8 : 5);
     const activeWeights = ALL_BIT_WEIGHTS.slice(8 - activeLen);
     const activeBits = bitsB.slice(8 - activeLen);
     const currentSum = activeBits.reduce((acc, bit, idx) => acc + bit * activeWeights[idx], 0);
@@ -289,6 +291,7 @@ export default function Arena() {
           guess={guessA}
           setGuess={setGuessA}
           color="sky"
+          roundLevel={roundLevel}
           onToggleBit={toggleBitA}
           onSubmit={submitAnswerA}
         />
@@ -299,6 +302,7 @@ export default function Arena() {
           guess={guessB}
           setGuess={setGuessB}
           color="rose"
+          roundLevel={roundLevel}
           onToggleBit={toggleBitB}
           onSubmit={submitAnswerB}
         />
@@ -307,14 +311,14 @@ export default function Arena() {
   );
 }
 
-function TeamPad({ teamData, bits, guess, setGuess, color, onToggleBit, onSubmit }) {
+function TeamPad({ teamData, bits, guess, setGuess, color, roundLevel, onToggleBit, onSubmit }) {
   const isSky = color === 'sky';
   const borderClass = isSky ? 'border-sky-500/40' : 'border-rose-500/40';
   const textClass = isSky ? 'text-sky-400' : 'text-rose-400';
   const btnBg = isSky ? 'bg-sky-500 hover:bg-sky-400' : 'bg-rose-500 hover:bg-rose-400';
 
   const isChallenge = teamData.questionType === 'UNLOCK_CHALLENGE';
-  const activeLen = teamData.bitLength || 5;
+  const activeLen = teamData.bitLength || (roundLevel === 4 ? 8 : 5);
   const activeWeights = ALL_BIT_WEIGHTS.slice(8 - activeLen);
   const activeBits = bits.slice(8 - activeLen);
 
@@ -333,7 +337,7 @@ function TeamPad({ teamData, bits, guess, setGuess, color, onToggleBit, onSubmit
 
         <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 text-center mb-5">
           <div className="flex justify-between items-center text-[10px] text-amber-400 font-bold uppercase tracking-widest mb-1 px-1">
-            <span>{teamData.levelLabel || "5-BIT MODE"}</span>
+            <span>{teamData.levelLabel || `${activeLen}-BIT MODE`}</span>
             <span>SOAL: {solvedCount} / {QUESTIONS_PER_ROUND}</span>
           </div>
 

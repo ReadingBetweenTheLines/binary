@@ -10,7 +10,7 @@ import {
 } from '../../utils/sound';
 
 const ALL_BIT_WEIGHTS = [128, 64, 32, 16, 8, 4, 2, 1];
-const QUESTIONS_PER_ROUND = 6; // Set to 6 questions per round
+const QUESTIONS_PER_ROUND = 6;
 
 export default function StudentPad() {
   const { gameState, myTeam, setMyTeam, updateRoomState } = useGame();
@@ -117,10 +117,11 @@ export default function StudentPad() {
   const teamB = activeMatch.teamB;
   const matchKey = activeMatch.matchKey;
   const currentMatchRound = activeMatch.currentMatchRound || 1;
+  const roundLevel = activeMatch.roundLevel || 1;
   const isChallenge = teamData.questionType === 'UNLOCK_CHALLENGE';
 
   const bits = teamData.bits || [0, 0, 0, 0, 0, 0, 0, 0];
-  const activeLen = teamData.bitLength || 5;
+  const activeLen = teamData.bitLength || (roundLevel === 4 ? 8 : 5);
 
   const activeWeights = ALL_BIT_WEIGHTS.slice(8 - activeLen);
   const activeBits = bits.slice(8 - activeLen);
@@ -211,11 +212,12 @@ export default function StudentPad() {
         return;
       }
 
-      // Round Victory Reset for Next Round
+      // Reset for next match round using correct starting bit length
       playRoundWinSound();
       const nextMatchRound = currentMatchRound + 1;
-      const initialQA = generateQuestionForRound(activeMatch.roundLevel || 1, 5, 0);
-      const initialQB = generateQuestionForRound(activeMatch.roundLevel || 1, 5, 0);
+      const startingBits = roundLevel === 4 ? 8 : 5;
+      const initialQA = generateQuestionForRound(roundLevel, startingBits, 0);
+      const initialQB = generateQuestionForRound(roundLevel, startingBits, 0);
 
       setGuess('');
 
@@ -228,7 +230,7 @@ export default function StudentPad() {
             ...teamA,
             roundsWon: newRoundsWonA,
             questionsSolvedInRound: 0,
-            bitLength: initialQA.bitLength || 5,
+            bitLength: initialQA.bitLength || startingBits,
             questionType: initialQA.type,
             target: initialQA.target,
             targetBit: initialQA.targetBit || null,
@@ -240,7 +242,7 @@ export default function StudentPad() {
             ...teamB,
             roundsWon: newRoundsWonB,
             questionsSolvedInRound: 0,
-            bitLength: initialQB.bitLength || 5,
+            bitLength: initialQB.bitLength || startingBits,
             questionType: initialQB.type,
             target: initialQB.target,
             targetBit: initialQB.targetBit || null,
@@ -254,7 +256,7 @@ export default function StudentPad() {
     }
 
     playCorrectSound();
-    const nextQ = generateQuestionForRound(activeMatch.roundLevel || 1, targetBitLen, solvedInRound);
+    const nextQ = generateQuestionForRound(roundLevel, targetBitLen, solvedInRound);
     setGuess('');
 
     updateRoomState({
@@ -310,7 +312,7 @@ export default function StudentPad() {
 
         <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 text-center mb-4 shadow-inner">
           <div className="flex justify-between items-center text-[10px] text-amber-400 uppercase tracking-widest font-bold mb-1 px-1">
-            <span>{teamData.levelLabel || "5-BIT MODE"}</span>
+            <span>{teamData.levelLabel || `${activeLen}-BIT MODE`}</span>
             <span>SOAL: {solvedCount} / {QUESTIONS_PER_ROUND}</span>
           </div>
 
