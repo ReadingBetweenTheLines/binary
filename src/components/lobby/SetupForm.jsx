@@ -69,10 +69,10 @@ export default function SetupForm() {
   };
 
   return (
-    <div className="w-full max-w-2xl bg-slate-900 border-2 border-sky-500/50 rounded-xl p-6 shadow-xl">
+    <div className="w-full max-w-2xl bg-slate-900 border-2 border-sky-500/50 rounded-xl p-6 shadow-xl font-mono">
       <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-800">
-        <h2 className="text-xl font-bold text-sky-400 font-mono">🏆 PENGATURAN TURNAMEN</h2>
-        <span className="text-xs text-slate-400 bg-slate-950 px-3 py-1 rounded border border-slate-800 font-mono">
+        <h2 className="text-xl font-bold text-sky-400">🏆 PENGATURAN TURNAMEN</h2>
+        <span className="text-xs text-slate-400 bg-slate-950 px-3 py-1 rounded border border-slate-800">
           👥 Terdaftar: {liveTeams.length} Kelompok
         </span>
       </div>
@@ -134,23 +134,23 @@ export default function SetupForm() {
           <h3 className="text-sm font-bold text-yellow-400 mb-3 font-mono">PENENTUAN MATCHUP PERTANDINGAN</h3>
           <div className="flex flex-col gap-3 max-h-72 overflow-y-auto mb-6 pr-1">
             {pairings.map((pair, idx) => (
-              <div key={idx} className="bg-slate-950 border border-slate-800 p-3 rounded flex items-center gap-3">
-                <span className="text-xs text-sky-400 font-bold font-mono w-16">MATCH {idx + 1}</span>
+              <div key={idx} className="bg-slate-950 border border-slate-800 p-3 rounded flex items-center gap-3 font-mono">
+                <span className="text-xs text-sky-400 font-bold w-16">MATCH {idx + 1}</span>
                 <select
                   value={pair.t1}
                   onChange={(e) => handlePairChange(idx, 't1', e.target.value)}
-                  className="bg-slate-900 border border-slate-700 text-white text-xs p-2 rounded flex-1 outline-none font-mono"
+                  className="bg-slate-900 border border-slate-700 text-white text-xs p-2 rounded flex-1 outline-none"
                 >
                   <option value="">-- Pilih Kelompok 1 --</option>
                   {availableOptions.map((t) => (
                     <option key={t} value={t}>{t}</option>
                   ))}
                 </select>
-                <span className="text-xs text-slate-500 font-bold font-mono">VS</span>
+                <span className="text-xs text-slate-500 font-bold">VS</span>
                 <select
                   value={pair.t2}
                   onChange={(e) => handlePairChange(idx, 't2', e.target.value)}
-                  className="bg-slate-900 border border-slate-700 text-white text-xs p-2 rounded flex-1 outline-none font-mono"
+                  className="bg-slate-900 border border-slate-700 text-white text-xs p-2 rounded flex-1 outline-none"
                 >
                   <option value="">-- Pilih Kelompok 2 --</option>
                   {availableOptions.map((t) => (

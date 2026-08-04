@@ -3,7 +3,7 @@ import { useGame } from './context/GameContext';
 import StudentPad from './components/mobile/StudentPad';
 import BracketTree from './components/bracket/BracketTree';
 import Arena from './components/arena/Arena';
-
+import SetupForm from './components/mobile/SetupForm';
 
 export default function App() {
   const [role, setRole] = useState(null); // null | 'TEACHER' | 'STUDENT'
@@ -82,7 +82,7 @@ export default function App() {
               type="password"
               value={teacherPass}
               onChange={(e) => setTeacherPass(e.target.value)}
-              placeholder="Masukkan PIN (Default: 1234)"
+              placeholder="Masukkan PIN (Default: choom)"
               className="w-full bg-slate-950 border border-slate-800 focus:border-sky-400 text-white text-center font-mono rounded p-3 text-sm outline-none"
             />
             <div className="flex gap-2">
@@ -106,7 +106,7 @@ export default function App() {
     );
   }
 
-  // 4. Teacher Dashboard (Shows Arena when match is active, otherwise BracketTree)
+  // 4. Teacher Dashboard Routing
   return (
     <div className="min-h-screen bg-slate-950 text-white p-6 font-mono">
       <header className="flex justify-between items-center mb-6 pb-4 border-b border-slate-800">
@@ -127,7 +127,13 @@ export default function App() {
       </header>
 
       <main className="flex flex-col items-center justify-center">
-        {gameState?.status === 'IN_MATCH' ? <Arena /> : <BracketTree />}
+        {gameState?.status === 'IN_MATCH' ? (
+          <Arena />
+        ) : gameState?.status === 'LOBBY' ? (
+          <SetupForm />
+        ) : (
+          <BracketTree />
+        )}
       </main>
     </div>
   );

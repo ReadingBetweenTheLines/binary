@@ -63,16 +63,15 @@ export default function BracketTree() {
     };
 
     const handleResetTournament = () => {
-        if (window.confirm("Apakah Anda yakin ingin meriset seluruh bagan dan menghapus kelompok?")) {
+        if (window.confirm("Apakah Anda yakin ingin meriset seluruh bagan dan mengubah kelompok?")) {
             updateRoomState({
                 ...gameState,
                 status: 'LOBBY',
-                teams: [],      // Clears registered team names
-                matches: {},    // Clears tournament matches
                 activeMatch: null
             });
         }
     };
+
     const getRoundTitle = () => {
         if (currentRoundLevel === 1) return "BABAK KUALIFIKASI (DESIMAL BINER)";
         if (currentRoundLevel === 2) return "BABAK SEMIFINAL (LOGIC GATES)";
@@ -81,16 +80,16 @@ export default function BracketTree() {
     };
 
     return (
-        <div className="w-full max-w-4xl bg-slate-900 border-2 border-sky-500/50 rounded-xl p-6 shadow-[0_0_30px_rgba(56,189,248,0.15)]">
+        <div className="w-full max-w-4xl bg-slate-900 border-2 border-sky-500/50 rounded-xl p-6 shadow-[0_0_30px_rgba(56,189,248,0.15)] font-mono">
             <div className="flex justify-between items-center mb-8 pb-4 border-b border-slate-800">
                 <div>
-                    <h2 className="text-2xl font-bold text-sky-400 font-mono tracking-wide">{getRoundTitle()}</h2>
-                    <p className="text-xs text-slate-400 font-mono">Pilih pertandingan untuk memulai duel</p>
+                    <h2 className="text-2xl font-bold text-sky-400 tracking-wide">{getRoundTitle()}</h2>
+                    <p className="text-xs text-slate-400">Pilih pertandingan untuk memulai duel</p>
                 </div>
                 <button
                     type="button"
                     onClick={handleResetTournament}
-                    className="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 text-xs font-mono rounded border border-rose-500/40 cursor-pointer transition"
+                    className="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 text-xs rounded border border-rose-500/40 cursor-pointer transition"
                 >
                     ⚙ RISET & UBAH KELOMPOK
                 </button>
@@ -103,24 +102,24 @@ export default function BracketTree() {
                     return (
                         <div key={key} className="bg-slate-950 border border-slate-800 rounded-lg p-4">
                             <div className="flex justify-between items-center mb-3">
-                                <span className="text-xs text-sky-400 font-bold font-mono">PERTANDINGAN {idx + 1}</span>
+                                <span className="text-xs text-sky-400 font-bold">PERTANDINGAN {idx + 1}</span>
                                 {m?.completed && (
-                                    <span className="text-[10px] text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800 font-mono">
+                                    <span className="text-[10px] text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">
                                         SELESAI
                                     </span>
                                 )}
                             </div>
 
-                            <div className="flex justify-between items-center py-2 px-3 bg-slate-900/60 rounded mb-2 border border-slate-800/80 font-mono text-sm">
+                            <div className="flex justify-between items-center py-2 px-3 bg-slate-900/60 rounded mb-2 border border-slate-800/80 text-sm">
                                 <span className={m?.winner && m.winner === m.t1 ? "text-emerald-400 font-bold" : "text-white"}>
                                     {m?.t1 || '---'}
                                 </span>
                                 {m?.winner && m.winner === m.t1 && <span>🏆</span>}
                             </div>
 
-                            <div className="text-center text-[10px] text-slate-600 my-1 font-mono font-bold">VS</div>
+                            <div className="text-center text-[10px] text-slate-600 my-1 font-bold">VS</div>
 
-                            <div className="flex justify-between items-center py-2 px-3 bg-slate-900/60 rounded mt-2 border border-slate-800/80 font-mono text-sm">
+                            <div className="flex justify-between items-center py-2 px-3 bg-slate-900/60 rounded mt-2 border border-slate-800/80 text-sm">
                                 <span className={m?.winner && m.winner === m.t2 ? "text-emerald-400 font-bold" : "text-white"}>
                                     {m?.t2 || '---'}
                                 </span>
@@ -131,7 +130,7 @@ export default function BracketTree() {
                                 <button
                                     type="button"
                                     onClick={() => handleStartMatch(key)}
-                                    className="mt-4 w-full py-2.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs rounded transition cursor-pointer font-mono shadow-md"
+                                    className="mt-4 w-full py-2.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs rounded transition cursor-pointer shadow-md"
                                 >
                                     ▶ MAINkan MATCH {idx + 1}
                                 </button>
@@ -142,4 +141,4 @@ export default function BracketTree() {
             </div>
         </div>
     );
-}
+}   
