@@ -7,8 +7,6 @@ export default function BracketTree() {
     const matches = gameState.matches || {};
     const matchKeys = Object.keys(matches);
 
-    // Determine current Round Level based on remaining match count:
-    // 4+ Matches = Round 1 (Decimal) | 2 Matches = Round 2 (Logic Gates) | 1 Match = Round 4 (Grand Final)
     const totalMatchesInRound = matchKeys.length;
     const currentRoundLevel =
         totalMatchesInRound >= 4 ? 1 : totalMatchesInRound === 2 ? 2 : totalMatchesInRound === 1 ? 4 : 1;
@@ -20,7 +18,6 @@ export default function BracketTree() {
             return;
         }
 
-        // Generate initial round-specific questions for both teams (Starting at 5-bit)
         const qA = generateQuestionForRound(currentRoundLevel, 5, 0);
         const qB = generateQuestionForRound(currentRoundLevel, 5, 0);
 
@@ -60,6 +57,63 @@ export default function BracketTree() {
             status: 'IN_MATCH',
             activeMatch: activeMatchData
         });
+    };
+
+    // FEATURE: Disqualify a specific team in a match slot
+    const handleDisqualifyTeam = (matchKey, teamToDisqualify, winnerTeam) => {
+        if (!teamToDisqualify || teamToDisqualify === '---') return;
+
+        if (window.confirm(`Apakah Anda yakin ingin mendiskualifikasi "${teamToDisqualify}"? "${winnerTeam}" akan otomatis menang.`)) {
+            const currentMatches = { ...matches };
+
+            currentMatches[matchKey] = {
+                ...currentMatches[matchKey],
+                winner: winnerTeam,
+                completed: true
+            };
+
+            const allKeys = Object.keys(currentMatches);
+            const allCompleted = allKeys.every((k) => currentMatches[k].completed);
+
+            if (allCompleted) {
+                const winners = allKeys.map((k) => currentMatches[k].winner);
+
+                if (winners.length === 1) {
+                    updateRoomState({
+                        ...gameState,
+                        status: 'FINISHED',
+                        champion: winners[0],
+                        matches: currentMatches,
+                        activeMatch: null
+                    });
+                    return;
+                }
+
+                const nextRoundMatches = {};
+                for (let i = 0; i < winners.length; i += 2) {
+                    nextRoundMatches[`m${i / 2 + 1}`] = {
+                        id: `m_${i / 2}`,
+                        t1: winners[i] || 'TBD',
+                        t2: winners[i + 1] || 'TBD',
+                        winner: null,
+                        completed: false
+                    };
+                }
+
+                updateRoomState({
+                    ...gameState,
+                    status: 'BRACKET',
+                    matches: nextRoundMatches,
+                    activeMatch: null
+                });
+                return;
+            }
+
+            updateRoomState({
+                ...gameState,
+                matches: currentMatches
+            });
+        }
     };
 
     const handleResetTournament = () => {
@@ -110,20 +164,46 @@ export default function BracketTree() {
                                 )}
                             </div>
 
+                            {/* TEAM 1 SLOT */}
                             <div className="flex justify-between items-center py-2 px-3 bg-slate-900/60 rounded mb-2 border border-slate-800/80 text-sm">
                                 <span className={m?.winner && m.winner === m.t1 ? "text-emerald-400 font-bold" : "text-white"}>
                                     {m?.t1 || '---'}
                                 </span>
-                                {m?.winner && m.winner === m.t1 && <span>🏆</span>}
+                                <div className="flex items-center gap-2">
+                                    {m?.winner && m.winner === m.t1 && <span>🏆</span>}
+                                    {!m?.completed && m?.t1 && m?.t2 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDisqualifyTeam(key, m.t1, m.t2)}
+                                            className="text-[10px] bg-rose-950 hover:bg-rose-900 text-rose-400 px-1.5 py-0.5 rounded border border-rose-800 cursor-pointer"
+                                            title="Diskualifikasi Kelompok 1"
+                                        >
+                                            🚫 DQ
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="text-center text-[10px] text-slate-600 my-1 font-bold">VS</div>
 
+                            {/* TEAM 2 SLOT */}
                             <div className="flex justify-between items-center py-2 px-3 bg-slate-900/60 rounded mt-2 border border-slate-800/80 text-sm">
                                 <span className={m?.winner && m.winner === m.t2 ? "text-emerald-400 font-bold" : "text-white"}>
                                     {m?.t2 || '---'}
                                 </span>
-                                {m?.winner && m.winner === m.t2 && <span>🏆</span>}
+                                <div className="flex items-center gap-2">
+                                    {m?.winner && m.winner === m.t2 && <span>🏆</span>}
+                                    {!m?.completed && m?.t1 && m?.t2 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDisqualifyTeam(key, m.t2, m.t1)}
+                                            className="text-[10px] bg-rose-950 hover:bg-rose-900 text-rose-400 px-1.5 py-0.5 rounded border border-rose-800 cursor-pointer"
+                                            title="Diskualifikasi Kelompok 2"
+                                        >
+                                            🚫 DQ
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
                             {!m?.completed && (
@@ -141,4 +221,4 @@ export default function BracketTree() {
             </div>
         </div>
     );
-}   
+}
