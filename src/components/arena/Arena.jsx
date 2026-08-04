@@ -35,29 +35,28 @@ export default function Arena() {
     });
   };
 
-  // Shared Core Logic for process answers (Works for both Host Arena & StudentPad)
   const processAnswerForTeam = (winningTeamKey, nextBitLen = null) => {
     const isA = winningTeamKey === 'teamA';
     const activeTeam = isA ? teamA : teamB;
     const targetBitLen = nextBitLen || activeTeam.bitLength || 5;
     const solvedInRound = (activeTeam.questionsSolvedInRound || 0) + 1;
 
-    // Check Round Win Condition (3 solved questions in current round)
+    // Round Won
     if (solvedInRound >= QUESTIONS_PER_ROUND) {
       const newRoundsWonA = (teamA.roundsWon || 0) + (isA ? 1 : 0);
       const newRoundsWonB = (teamB.roundsWon || 0) + (isA ? 0 : 1);
 
-      // Check Match Win Condition (First to 2 Round Wins)
+      // Match Won Condition
       if (newRoundsWonA >= 2 || newRoundsWonB >= 2) {
         const winnerName = newRoundsWonA >= 2 ? teamA.name : teamB.name;
         handleFinishMatch(winnerName);
         return;
       }
 
-      // Advance to Next Match Round & Reset Progress
+      // Next Round In Match
       const nextMatchRound = currentMatchRound + 1;
-      const initialQA = generateQuestionForRound(nextMatchRound, 5, 0);
-      const initialQB = generateQuestionForRound(nextMatchRound, 5, 0);
+      const initialQA = generateQuestionForRound(activeMatch.roundLevel || 1, 5, 0);
+      const initialQB = generateQuestionForRound(activeMatch.roundLevel || 1, 5, 0);
 
       setBitsA([0, 0, 0, 0, 0, 0, 0, 0]);
       setBitsB([0, 0, 0, 0, 0, 0, 0, 0]);
@@ -97,7 +96,7 @@ export default function Arena() {
     }
 
     // Normal Next Question inside Same Round
-    const nextQ = generateQuestionForRound(currentMatchRound, targetBitLen, solvedInRound);
+    const nextQ = generateQuestionForRound(activeMatch.roundLevel || 1, targetBitLen, solvedInRound);
 
     if (isA) {
       setGuessA('');
@@ -132,8 +131,7 @@ export default function Arena() {
       if (parseInt(guessA, 10) === teamA.targetBit) {
         processAnswerForTeam('teamA', teamA.nextBitLength);
       } else {
-        alert(`Salah! Nilai bobot bit berikutnya bukan ${guessA}. Perhatikan kelipatan 2!`);
-        setGuessA('');
+        alert(`Jawaban Salah! Angka kelipatan bit berikutnya bukan ${guessA}. Tidak ada penalti score/ronde.`);
       }
       return;
     }
@@ -146,7 +144,7 @@ export default function Arena() {
     if (currentSum === teamA.target) {
       processAnswerForTeam('teamA');
     } else {
-      alert(`Jawaban ${teamA.name} belum cocok (${currentSum} / ${teamA.target})!`);
+      alert(`Jawaban ${teamA.name} belum tepat (${currentSum} / ${teamA.target}). Coba sesuaikan bit.`);
     }
   };
 
@@ -157,8 +155,7 @@ export default function Arena() {
       if (parseInt(guessB, 10) === teamB.targetBit) {
         processAnswerForTeam('teamB', teamB.nextBitLength);
       } else {
-        alert(`Salah! Nilai bobot bit berikutnya bukan ${guessB}. Perhatikan kelipatan 2!`);
-        setGuessB('');
+        alert(`Jawaban Salah! Angka kelipatan bit berikutnya bukan ${guessB}. Tidak ada penalti score/ronde.`);
       }
       return;
     }
@@ -171,7 +168,7 @@ export default function Arena() {
     if (currentSum === teamB.target) {
       processAnswerForTeam('teamB');
     } else {
-      alert(`Jawaban ${teamB.name} belum cocok (${currentSum} / ${teamB.target})!`);
+      alert(`Jawaban ${teamB.name} belum tepat (${currentSum} / ${teamB.target}). Coba sesuaikan bit.`);
     }
   };
 
@@ -240,26 +237,26 @@ export default function Arena() {
   };
 
   return (
-    <div className="w-full max-w-5xl bg-slate-900 border-2 border-sky-500/50 rounded-xl p-6 shadow-[0_0_30px_rgba(56,189,248,0.15)]">
+    <div className="w-full max-w-5xl bg-slate-900 border-2 border-sky-500/50 rounded-xl p-6 shadow-[0_0_30px_rgba(56,189,248,0.15)] font-mono">
       <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-800">
         <div>
-          <h2 className="text-xl font-bold text-sky-400 font-mono">
+          <h2 className="text-xl font-bold text-sky-400">
             ARENA DUEL: {matchKey?.toUpperCase()} — RONDE {currentMatchRound} / 3
           </h2>
-          <p className="text-xs text-slate-400 font-mono">
-            Setiap ronde membutuhkan {QUESTIONS_PER_ROUND} soal selesai. Menangkan 2 ronde untuk menang pertandingan!
+          <p className="text-xs text-slate-400">
+            Selesaikan {QUESTIONS_PER_ROUND} soal per ronde. Menangkan 2 ronde untuk memenangi match!
           </p>
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="text-sm font-mono font-bold text-yellow-400 bg-slate-950 px-4 py-2 rounded-lg border border-yellow-500/30">
-            🏆 SKOR RONDE: {teamA.roundsWon || 0} - {teamB.roundsWon || 0}
+          <div className="text-sm font-bold text-yellow-400 bg-slate-950 px-4 py-2 rounded-lg border border-yellow-500/30">
+            🏆 RONDE: {teamA.roundsWon || 0} - {teamB.roundsWon || 0}
           </div>
 
           <button
             type="button"
             onClick={handleCancelMatch}
-            className="px-3 py-2 bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 border border-rose-500/40 rounded text-xs font-mono font-bold cursor-pointer transition"
+            className="px-3 py-2 bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 border border-rose-500/40 rounded text-xs font-bold cursor-pointer transition"
           >
             ⛔ BATALKAN
           </button>
@@ -306,24 +303,24 @@ function TeamPad({ teamData, bits, guess, setGuess, color, onToggleBit, onSubmit
   const solvedCount = teamData.questionsSolvedInRound || 0;
 
   return (
-    <div className={`bg-slate-950 border-2 ${borderClass} rounded-xl p-5 flex flex-col justify-between shadow-lg`}>
+    <div className={`bg-slate-950 border-2 ${borderClass} rounded-xl p-5 flex flex-col justify-between shadow-lg font-mono`}>
       <div>
         <div className="flex justify-between items-center mb-4">
-          <h3 className={`font-bold text-base font-mono ${textClass}`}>{teamData.name}</h3>
-          <div className="text-yellow-400 font-mono font-bold text-xs">
+          <h3 className={`font-bold text-base ${textClass}`}>{teamData.name}</h3>
+          <div className="text-yellow-400 font-bold text-xs">
             RONDE MENANG: {teamData.roundsWon || 0} / 2
           </div>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 text-center mb-5">
-          <div className="flex justify-between items-center text-[10px] text-amber-400 font-bold uppercase tracking-widest font-mono mb-1 px-1">
+          <div className="flex justify-between items-center text-[10px] text-amber-400 font-bold uppercase tracking-widest mb-1 px-1">
             <span>{teamData.levelLabel || "5-BIT MODE"}</span>
             <span>SOAL: {solvedCount} / {QUESTIONS_PER_ROUND}</span>
           </div>
 
           {isChallenge ? (
             <div className="py-2">
-              <p className="text-xs text-slate-300 font-mono mb-2">
+              <p className="text-xs text-slate-300 mb-2">
                 Berapa nilai bobot bit berikutnya setelah <span className="text-yellow-400 font-bold">{activeWeights[0]}</span>?
               </p>
               <input
@@ -334,13 +331,13 @@ function TeamPad({ teamData, bits, guess, setGuess, color, onToggleBit, onSubmit
                 onChange={(e) => setGuess(e.target.value.replace(/\D/g, ''))}
                 onFocus={(e) => e.target.select()}
                 placeholder="Masukkan angka..."
-                className="bg-slate-950 border border-amber-500/50 text-amber-400 text-center font-mono font-bold text-xl rounded p-2 w-48 outline-none focus:border-amber-400"
+                className="bg-slate-950 border border-amber-500/50 text-amber-400 text-center font-bold text-xl rounded p-2 w-48 outline-none focus:border-amber-400"
               />
             </div>
           ) : (
             <>
-              <div className={`text-4xl font-extrabold font-mono my-1 ${textClass}`}>{teamData.target}</div>
-              <div className="text-xs text-slate-400 font-mono">
+              <div className={`text-4xl font-extrabold my-1 ${textClass}`}>{teamData.target}</div>
+              <div className="text-xs text-slate-400">
                 Jumlah Bit: <span className="text-white font-bold">{currentSum}</span>
               </div>
             </>
@@ -355,11 +352,11 @@ function TeamPad({ teamData, bits, guess, setGuess, color, onToggleBit, onSubmit
 
               return (
                 <div key={weight} className="flex flex-col items-center gap-1">
-                  <span className="text-[9px] text-slate-500 font-mono">{weight}</span>
+                  <span className="text-[9px] text-slate-500">{weight}</span>
                   <button
                     type="button"
                     onClick={() => onToggleBit(bitIndexInFullArray)}
-                    className={`w-full aspect-square font-mono font-bold text-sm rounded transition cursor-pointer border ${
+                    className={`w-full aspect-square font-bold text-sm rounded transition cursor-pointer border ${
                       isOn
                         ? 'bg-emerald-500 border-emerald-400 text-slate-950 shadow-[0_0_10px_rgba(34,197,94,0.4)]'
                         : 'bg-slate-900 border-slate-800 text-slate-500 hover:border-slate-700'
@@ -377,7 +374,7 @@ function TeamPad({ teamData, bits, guess, setGuess, color, onToggleBit, onSubmit
       <button
         type="button"
         onClick={onSubmit}
-        className={`w-full py-3 ${btnBg} text-slate-950 font-bold rounded-lg transition cursor-pointer text-sm font-mono shadow-md`}
+        className={`w-full py-3 ${btnBg} text-slate-950 font-bold rounded-lg transition cursor-pointer text-sm shadow-md`}
       >
         {isChallenge ? '🔓 JAWAB TANTANGAN UNLOCK' : '▶ KIRIM OVERRIDE'}
       </button>

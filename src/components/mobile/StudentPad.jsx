@@ -3,7 +3,7 @@ import { useGame } from '../../context/GameContext';
 import { generateQuestionForRound } from '../../utils/questionGenerator';
 
 const ALL_BIT_WEIGHTS = [128, 64, 32, 16, 8, 4, 2, 1];
-const QUESTIONS_PER_ROUND = 6; // Number of questions needed to win 1 round
+const QUESTIONS_PER_ROUND = 3;
 
 export default function StudentPad() {
   const { gameState, myTeam, setMyTeam, updateRoomState } = useGame();
@@ -29,24 +29,24 @@ export default function StudentPad() {
     };
 
     return (
-      <div className="min-h-screen bg-slate-950 text-white p-6 flex flex-col justify-center items-center">
+      <div className="min-h-screen bg-slate-950 text-white p-6 flex flex-col justify-center items-center font-mono">
         <div className="w-full max-w-sm bg-slate-900 border border-sky-500/30 p-6 rounded-xl shadow-xl">
           <h2 className="text-lg font-bold text-sky-400 mb-1">📱 GABUNG ARENA</h2>
           <p className="text-xs text-slate-400 mb-6">Buat nama kelompok baru atau pilih yang sudah ada</p>
 
           <form onSubmit={handleCreateCustomTeam} className="mb-6 pb-6 border-b border-slate-800">
-            <label className="text-xs text-slate-400 block mb-2 font-mono">BUAT NAMA KELOMPOK SENDIRI</label>
+            <label className="text-xs text-slate-400 block mb-2">BUAT NAMA KELOMPOK SENDIRI</label>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={customTeamName}
                 onChange={(e) => setCustomTeamName(e.target.value)}
                 placeholder="CONTOH: CYBER NATIVE"
-                className="flex-1 bg-slate-950 border border-slate-800 focus:border-sky-400 text-white text-xs font-mono rounded p-3 outline-none uppercase"
+                className="flex-1 bg-slate-950 border border-slate-800 focus:border-sky-400 text-white text-xs rounded p-3 outline-none uppercase"
               />
               <button
                 type="submit"
-                className="py-3 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded font-mono cursor-pointer transition"
+                className="py-3 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded cursor-pointer transition"
               >
                 BUAT
               </button>
@@ -54,14 +54,14 @@ export default function StudentPad() {
           </form>
 
           <div>
-            <label className="text-xs text-slate-400 block mb-2 font-mono">ATAU PILIH KELOMPOK TERDAFTAR</label>
+            <label className="text-xs text-slate-400 block mb-2">ATAU PILIH KELOMPOK TERDAFTAR</label>
             <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
               {gameState.teams?.map((team) => (
                 <button
                   key={team}
                   type="button"
                   onClick={() => setMyTeam(team)}
-                  className="w-full py-2.5 px-3 bg-slate-950 border border-slate-800 hover:border-sky-400 text-slate-300 font-mono font-bold rounded text-xs text-left cursor-pointer transition"
+                  className="w-full py-2.5 px-3 bg-slate-950 border border-slate-800 hover:border-sky-400 text-slate-300 font-bold rounded text-xs text-left cursor-pointer transition"
                 >
                   👥 {team}
                 </button>
@@ -79,9 +79,9 @@ export default function StudentPad() {
 
   if (!isMyTurn) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white p-6 flex flex-col justify-center items-center text-center">
-        <div className="text-xl font-bold text-sky-400 mb-2 font-mono">{myTeam}</div>
-        <div className="text-xs text-slate-500 font-mono animate-pulse mb-6">
+      <div className="min-h-screen bg-slate-950 text-white p-6 flex flex-col justify-center items-center text-center font-mono">
+        <div className="text-xl font-bold text-sky-400 mb-2">{myTeam}</div>
+        <div className="text-xs text-slate-500 animate-pulse mb-6">
           {gameState.status === 'IN_MATCH'
             ? 'Pertandingan sedang berjalan (Menunggu giliran kelompok Anda)...'
             : 'Menunggu guru memulai pertandingan di layar utama...'}
@@ -129,17 +129,16 @@ export default function StudentPad() {
 
   const currentSum = activeBits.reduce((acc, bit, idx) => acc + bit * activeWeights[idx], 0);
 
-  // Helper when a team wins a round from student view
   const handleProcessAnswer = (targetBitLen = activeLen) => {
     const solvedInRound = (teamData.questionsSolvedInRound || 0) + 1;
 
-    // Check Round Win Condition (3 solved questions in current round)
+    // Check Round Win
     if (solvedInRound >= QUESTIONS_PER_ROUND) {
       const isA = teamKey === 'teamA';
       const newRoundsWonA = (teamA.roundsWon || 0) + (isA ? 1 : 0);
       const newRoundsWonB = (teamB.roundsWon || 0) + (isA ? 0 : 1);
 
-      // Check Match Win Condition (First to 2 Round Wins)
+      // Match Win Condition
       if (newRoundsWonA >= 2 || newRoundsWonB >= 2) {
         const winnerName = newRoundsWonA >= 2 ? teamA.name : teamB.name;
         const currentMatches = { ...gameState.matches };
@@ -196,10 +195,10 @@ export default function StudentPad() {
         return;
       }
 
-      // Advance to Next Match Round & Reset Progress
+      // Next Round in Match
       const nextMatchRound = currentMatchRound + 1;
-      const initialQA = generateQuestionForRound(nextMatchRound, 5, 0);
-      const initialQB = generateQuestionForRound(nextMatchRound, 5, 0);
+      const initialQA = generateQuestionForRound(activeMatch.roundLevel || 1, 5, 0);
+      const initialQB = generateQuestionForRound(activeMatch.roundLevel || 1, 5, 0);
 
       setGuess('');
 
@@ -237,8 +236,8 @@ export default function StudentPad() {
       return;
     }
 
-    // Normal Next Question inside Same Round
-    const nextQ = generateQuestionForRound(currentMatchRound, targetBitLen, solvedInRound);
+    // Normal Next Question
+    const nextQ = generateQuestionForRound(activeMatch.roundLevel || 1, targetBitLen, solvedInRound);
     setGuess('');
 
     updateRoomState({
@@ -265,7 +264,7 @@ export default function StudentPad() {
       if (parseInt(guess, 10) === teamData.targetBit) {
         handleProcessAnswer(teamData.nextBitLength);
       } else {
-        alert(`Salah! Nilai bobot bit berikutnya bukan ${guess}. Perhatikan pola kelipatan 2!`);
+        alert(`Jawaban Salah! Angka kelipatan bit berikutnya bukan ${guess}. Tidak ada penalti score/ronde.`);
         setGuess('');
       }
       return;
@@ -274,31 +273,31 @@ export default function StudentPad() {
     if (currentSum === teamData.target) {
       handleProcessAnswer(activeLen);
     } else {
-      alert(`Jawaban Belum Tepat! Total Saat Ini: ${currentSum} / Target: ${teamData.target}`);
+      alert(`Jawaban Belum Tepat! Total Saat Ini: ${currentSum} / Target: ${teamData.target}.`);
     }
   };
 
   const solvedCount = teamData.questionsSolvedInRound || 0;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-4 flex flex-col justify-between">
+    <div className="min-h-screen bg-slate-950 text-white p-4 flex flex-col justify-between font-mono">
       <div>
         <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-800">
-          <span className="text-xs font-bold text-sky-400 font-mono">{myTeam}</span>
-          <span className="text-xs font-mono text-yellow-400 font-bold">
+          <span className="text-xs font-bold text-sky-400">{myTeam}</span>
+          <span className="text-xs text-yellow-400 font-bold">
             RONDE MENANG: {teamData.roundsWon || 0} / 2
           </span>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 text-center mb-4 shadow-inner">
-          <div className="flex justify-between items-center text-[10px] text-amber-400 uppercase tracking-widest font-mono font-bold mb-1 px-1">
+          <div className="flex justify-between items-center text-[10px] text-amber-400 uppercase tracking-widest font-bold mb-1 px-1">
             <span>{teamData.levelLabel || "5-BIT MODE"}</span>
             <span>SOAL: {solvedCount} / {QUESTIONS_PER_ROUND}</span>
           </div>
 
           {isChallenge ? (
             <div className="py-2">
-              <p className="text-xs text-slate-300 font-mono mb-2">
+              <p className="text-xs text-slate-300 mb-2">
                 Berapa nilai bobot bit berikutnya setelah <span className="text-yellow-400 font-bold">{activeWeights[0]}</span>?
               </p>
               <input
@@ -309,13 +308,13 @@ export default function StudentPad() {
                 onChange={(e) => setGuess(e.target.value.replace(/\D/g, ''))}
                 onFocus={(e) => e.target.select()}
                 placeholder="Angka..."
-                className="bg-slate-950 border border-amber-500/50 text-amber-400 text-center font-mono font-bold text-2xl rounded p-3 w-44 outline-none focus:border-amber-400"
+                className="bg-slate-950 border border-amber-500/50 text-amber-400 text-center font-bold text-2xl rounded p-3 w-44 outline-none focus:border-amber-400"
               />
             </div>
           ) : (
             <>
-              <div className="text-4xl font-extrabold font-mono text-sky-400 my-1">{teamData.target}</div>
-              <div className="text-xs text-slate-400 font-mono">
+              <div className="text-4xl font-extrabold text-sky-400 my-1">{teamData.target}</div>
+              <div className="text-xs text-slate-400">
                 Jumlah Bit: <span className="text-white font-bold">{currentSum}</span>
               </div>
             </>
@@ -332,7 +331,7 @@ export default function StudentPad() {
                   key={weight}
                   type="button"
                   onClick={() => handleToggleBit(bitIndexInFullArray)}
-                  className={`p-3 rounded flex flex-col items-center justify-center font-mono cursor-pointer border ${
+                  className={`p-3 rounded flex flex-col items-center justify-center cursor-pointer border ${
                     isOn
                       ? 'bg-emerald-500 border-emerald-400 text-slate-950 font-bold shadow-lg'
                       : 'bg-slate-900 border-slate-800 text-slate-400'
@@ -350,7 +349,7 @@ export default function StudentPad() {
       <button
         type="button"
         onClick={handleSubmit}
-        className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-lg text-base cursor-pointer shadow-lg active:scale-95 transition font-mono"
+        className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-lg text-base cursor-pointer shadow-lg active:scale-95 transition"
       >
         {isChallenge ? '🔓 JAWAB TANTANGAN UNLOCK' : '▶ KIRIM OVERRIDE'}
       </button>

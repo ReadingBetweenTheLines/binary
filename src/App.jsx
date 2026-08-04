@@ -3,13 +3,13 @@ import { useGame } from './context/GameContext';
 import StudentPad from './components/mobile/StudentPad';
 import BracketTree from './components/bracket/BracketTree';
 import Arena from './components/arena/Arena';
-import SetupForm from './components/lobby/SetupForm';
+import SetupForm from './components/setup/SetupForm';
 
 export default function App() {
-  const [role, setRole] = useState(null); // null | 'TEACHER' | 'STUDENT'
+  const [role, setRole] = useState(null);
   const [teacherPass, setTeacherPass] = useState('');
   const [isTeacherAuthed, setIsTeacherAuthed] = useState(false);
-  const { gameState } = useGame();
+  const { gameState, updateRoomState } = useGame();
 
   const handleTeacherAuth = (e) => {
     e.preventDefault();
@@ -20,7 +20,15 @@ export default function App() {
     }
   };
 
-  // 1. Role Selection Screen (App Entry)
+  const handleRestartTournament = () => {
+    updateRoomState({
+      ...gameState,
+      status: 'LOBBY',
+      activeMatch: null,
+      champion: null
+    });
+  };
+
   if (!role) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex flex-col justify-center items-center p-6 font-mono">
@@ -50,7 +58,6 @@ export default function App() {
     );
   }
 
-  // 2. Student View
   if (role === 'STUDENT') {
     return (
       <div>
@@ -69,7 +76,6 @@ export default function App() {
     );
   }
 
-  // 3. Teacher Password Prompt
   if (role === 'TEACHER' && !isTeacherAuthed) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex flex-col justify-center items-center p-6 font-mono">
@@ -106,7 +112,32 @@ export default function App() {
     );
   }
 
-  // 4. Teacher Dashboard Routing
+  // CHAMPION VICTORY SCREEN
+  if (gameState?.status === 'FINISHED') {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex flex-col justify-center items-center p-6 font-mono">
+        <div className="w-full max-w-lg bg-slate-900 border-2 border-yellow-500/60 p-8 rounded-2xl shadow-[0_0_50px_rgba(234,179,8,0.2)] text-center">
+          <div className="text-6xl mb-4 animate-bounce">🏆</div>
+          <h1 className="text-sm font-bold text-yellow-400 uppercase tracking-widest mb-2">JUARA TURNAMEN BINARY CLASH</h1>
+          <div className="text-3xl font-extrabold text-white my-4 bg-slate-950 py-4 px-6 rounded-xl border border-yellow-500/30">
+            {gameState.champion || 'PEMENANG'}
+          </div>
+          <p className="text-xs text-slate-400 mb-8">
+            Selamat kepada kelompok pemenang yang telah menyelesaikan seluruh babak duel!
+          </p>
+
+          <button
+            type="button"
+            onClick={handleRestartTournament}
+            className="w-full py-4 bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-bold rounded-xl text-sm transition shadow-lg cursor-pointer"
+          >
+            🔄 BUAT TURNAMEN BARU
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-white p-6 font-mono">
       <header className="flex justify-between items-center mb-6 pb-4 border-b border-slate-800">
